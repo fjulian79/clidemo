@@ -17,22 +17,38 @@
 #include <stdint.h>
 #include <errno.h>
 
-/**
- * Nucleo-F103RB led definitions
- */
+#define VERSIONSTRING      "rel_1_0_0"
+
 #define LED_PORT            GPIOA
 #define LED_PIN             GPIO5
 
+typedef enum
+{
+	LED_STATIC = 0,
+	LED_BLINK
+
+}led_mode_t;
+
 /**
- * Our systick counter, one tick = 1ms
+ * We need a global command line interface instance.
+ */
+Cli cli;
+
+/**
+ * The mode of the led
+ */
+led_mode_t ledMode = LED_BLINK;
+
+/**
+ * Systick counter, one tick = 1ms
  */
 volatile uint32_t sysTick = 0;
 
 static void clock_setup(void)
 {
     /*
-     * We want to use full speed .. check that the clock from the st-link
-     * is provided to the mcu.
+     * We want to use full speed. Check that the clock from the st-link is
+     * provided to the mcu.
      * */
     rcc_osc_off(RCC_HSE);
     rcc_osc_bypass_enable(RCC_HSE);
@@ -59,11 +75,17 @@ static void usart_setup(void)
     usart_set_baudrate(USART2, 115200);
     usart_set_databits(USART2, 8);
     usart_set_stopbits(USART2, USART_STOPBITS_1);
-    usart_set_mode(USART2, USART_MODE_TX);
+    usart_set_mode(USART2, USART_MODE_TX_RX);
     usart_set_parity(USART2, USART_PARITY_NONE);
     usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
 
     usart_enable(USART2);
+
+    /**
+     * stdout is line buffered by default. This causes the cli prompt not to
+     * be printed when calling printf without line termination.
+     */
+    setbuf(stdout, NULL);
 }
 
 static void systick_setup(void)
@@ -81,19 +103,24 @@ static void systick_setup(void)
     systick_counter_enable();
 }
 
+/**
+ * As this is a C++ project we have to prevent the compiler from mangling the
+ * function name with arguments to support function overloading. Doing so
+ * allows to link with external C code.
+ */
 extern "C"
-{
-
 void sys_tick_handler(void)
 {
     sysTick++;
 }
 
+extern "C"
 int _write(int file, char *ptr, int len)
 {
 	int i;
 
-	if (file == 1) {
+	if (file == 1)
+	{
 		for (i = 0; i < len; i++)
 			usart_send_blocking(USART2, ptr[i]);
 		return i;
@@ -103,20 +130,49 @@ int _write(int file, char *ptr, int len)
 	return -1;
 }
 
-} /* extern "C"  */
-
-#define THRUSTMETER_VERSIONSTRING      "clidemo rel_1_0_0\n"
-
 /**
- * Just say who we are
+ * to print the version.
  */
 int8_t cmd_ver(void* args)
 {
 	unused(args);
 
-	printf(THRUSTMETER_VERSIONSTRING);
+	printf(VERSIONSTRING "\n");
     printf("build: %s, %s\n", __DATE__, __TIME__);
     return 0;
+}
+
+/**
+ * To control the led
+ */
+int8_t cmd_led(void* args)
+{
+	int8_t ret = 0;
+	char *c = cli.get_parg();
+
+	if (c == 0)
+	{
+		ret = -1;
+	    goto out;
+	}
+
+	if (*c == '0')
+	{
+		ledMode = LED_STATIC;
+		gpio_clear(LED_PORT, LED_PIN);
+	}
+	else if (*c == '1')
+	{
+		ledMode = LED_STATIC;
+		gpio_set(LED_PORT, LED_PIN);
+	}
+	else if (*c == 'b')
+	{
+		ledMode = LED_BLINK;
+	}
+
+	out:
+	return ret;
 }
 
 /**
@@ -124,39 +180,42 @@ int8_t cmd_ver(void* args)
  */
 cli_cmd_t cmd_table[] =
 {
-   {"ver", 	cmd_ver}, /* print the version */
+   {"ver", cmd_ver}, /* print the version */
+   {"led", cmd_led}, /* to control the led */
    {0,      0}
 };
 
 int main(void)
 {
-    Cli cli;
     uint32_t lastTick = 0;
-    uint16_t c = 0;
 
     clock_setup();
     gpio_setup();
     usart_setup();
     systick_setup();
 
-    cli.init(cmd_table, arraysize(cmd_table));
+    printf("Command line interface demo.\n");
+    printf(VERSIONSTRING"\n");
 
-    printf("Hello World! %d\r\n", c);
+    /* Start the commandline interface */
+    cli.init(cmd_table, arraysize(cmd_table));
 
     while (1)
     {
         if (sysTick - lastTick > 250)
         {
-            gpio_toggle(LED_PORT, LED_PIN);
             lastTick = sysTick;
 
-            printf("Hello World! %d\r\n", c);
-            c = c < 9 ? c+1 : 0;
+            if (ledMode == LED_BLINK)
+            {
+            	gpio_toggle(LED_PORT, LED_PIN);
+            }
         }
 
-        if (usart_get_flag(USART2,USART_SR_RXNE))
+        if (usart_get_flag(USART2,USART_SR_RXNE) == true)
         {
-        	cli.proc_byte((uint8_t)usart_recv(USART2));
+        	/* pass rx data to the cli  */
+        	cli.proc_byte((uint8_t) usart_recv(USART2));
         }
     }
 
