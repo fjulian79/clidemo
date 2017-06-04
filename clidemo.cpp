@@ -6,16 +6,17 @@
  */
 
 #include "libopencm3/stm32/rcc.h"
-#include "libopencm3/stm32/gpio.h"
-#include "libopencm3/stm32/usart.h"
 #include "libopencm3/cm3/systick.h"
+
+#include "bsp/bsp.h"
+#include "bsp/bsp_gpio.h"
+#include "bsp/bsp_usart.h"
 
 #include "mybuildroot/common.h"
 #include "cli.h"
 
 #include <stdio.h>
 #include <stdint.h>
-#include <errno.h>
 
 #define VERSIONSTRING      "rel_1_0_0"
 
@@ -44,50 +45,6 @@ led_mode_t ledMode = LED_BLINK;
  */
 volatile uint32_t sysTick = 0;
 
-static void clock_setup(void)
-{
-    /*
-     * We want to use full speed. Check that the clock from the st-link is
-     * provided to the mcu.
-     * */
-    rcc_osc_off(RCC_HSE);
-    rcc_osc_bypass_enable(RCC_HSE);
-    rcc_clock_setup_in_hse_8mhz_out_72mhz();
-}
-
-static void gpio_setup(void)
-{
-    rcc_periph_clock_enable(RCC_GPIOA);
-
-    gpio_set_mode(LED_PORT, GPIO_MODE_OUTPUT_2_MHZ,
-              GPIO_CNF_OUTPUT_PUSHPULL, LED_PIN);
-
-    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
-              GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
-    gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
-              GPIO_CNF_INPUT_FLOAT, GPIO_USART2_RX);
-}
-
-static void usart_setup(void)
-{
-    rcc_periph_clock_enable(RCC_USART2);
-
-    usart_set_baudrate(USART2, 115200);
-    usart_set_databits(USART2, 8);
-    usart_set_stopbits(USART2, USART_STOPBITS_1);
-    usart_set_mode(USART2, USART_MODE_TX_RX);
-    usart_set_parity(USART2, USART_PARITY_NONE);
-    usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
-
-    usart_enable(USART2);
-
-    /**
-     * stdout is line buffered by default. This causes the cli prompt not to
-     * be printed when calling printf without line termination.
-     */
-    setbuf(stdout, NULL);
-}
-
 static void systick_setup(void)
 {
     /* 72MHz / 8 => 9000000 counts per second */
@@ -114,22 +71,6 @@ void sys_tick_handler(void)
     sysTick++;
 }
 
-extern "C"
-int _write(int file, char *ptr, int len)
-{
-	int i;
-
-	if (file == 1)
-	{
-		for (i = 0; i < len; i++)
-			usart_send_blocking(USART2, ptr[i]);
-		return i;
-	}
-
-	errno = EIO;
-	return -1;
-}
-
 /**
  * to print the version.
  */
@@ -150,6 +91,8 @@ int8_t cmd_led(void* args)
 	int8_t ret = 0;
 	char *c = cli.get_parg();
 
+	unused(args);
+
 	if (c == 0)
 	{
 		ret = -1;
@@ -159,12 +102,12 @@ int8_t cmd_led(void* args)
 	if (*c == '0')
 	{
 		ledMode = LED_STATIC;
-		gpio_clear(LED_PORT, LED_PIN);
+		bspLedOff();
 	}
 	else if (*c == '1')
 	{
 		ledMode = LED_STATIC;
-		gpio_set(LED_PORT, LED_PIN);
+		bspLedOn();
 	}
 	else if (*c == 'b')
 	{
@@ -189,9 +132,9 @@ int main(void)
 {
     uint32_t lastTick = 0;
 
-    clock_setup();
-    gpio_setup();
-    usart_setup();
+    bspClockSetup(BSP_HSE_BYPASS_ON, BSP_CPU_SPEED_72MHZ);
+    bspLedInit();
+    bspTTYInit(115200);
     systick_setup();
 
     printf("Command line interface demo.\n");
@@ -208,14 +151,14 @@ int main(void)
 
             if (ledMode == LED_BLINK)
             {
-            	gpio_toggle(LED_PORT, LED_PIN);
+                bspLedToggle();
             }
         }
 
-        if (usart_get_flag(USART2,USART_SR_RXNE) == true)
+        if (bspTTYDataAvailable())
         {
         	/* pass rx data to the cli  */
-        	cli.proc_byte((uint8_t) usart_recv(USART2));
+        	cli.proc_byte((uint8_t) bspTTYGetChar());
         }
     }
 

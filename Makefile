@@ -1,6 +1,6 @@
 DEVICE      = stm32f103rb
 BINARY      = clidemo
-DEPENDS     = libopencm3 libcli
+DEPENDS     = libopencm3 libbsp libcli
 SRCEXT      = cpp
 DEFS        =
 INCLUDE     =
