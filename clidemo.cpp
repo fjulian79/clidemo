@@ -139,6 +139,8 @@ int main(void)
 
     printf("Command line interface demo.\n");
     printf(VERSIONSTRING"\n");
+    printf("build: %s, %s\n", __DATE__, __TIME__);
+    printf("Buffersize: %d\n", BUFSIZ);
 
     /* Start the commandline interface */
     cli.init(cmd_table, arraysize(cmd_table));
