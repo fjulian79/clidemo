@@ -78,8 +78,8 @@ int8_t cmd_ver(void* args)
 {
 	unused(args);
 
-	printf(VERSIONSTRING "\n");
-    printf("build: %s, %s\n", __DATE__, __TIME__);
+	printf("version: %s\n", VERSIONSTRING);
+    printf("build:   %s, %s\n", __DATE__, __TIME__);
     return 0;
 }
 
@@ -102,12 +102,12 @@ int8_t cmd_led(void* args)
 	if (*c == '0')
 	{
 		ledMode = LED_STATIC;
-		bspLedOff();
+		bspGpioClear(BSP_GPIO_LED);
 	}
 	else if (*c == '1')
 	{
 		ledMode = LED_STATIC;
-		bspLedOn();
+		bspGpioSet(BSP_GPIO_LED);
 	}
 	else if (*c == 'b')
 	{
@@ -119,12 +119,32 @@ int8_t cmd_led(void* args)
 }
 
 /**
+ * To to print the help text
+ */
+int8_t cmd_help(void* args)
+{
+    unused(args);
+
+    printf("Supported commands:\n");
+    printf("  ver       Used to print version infos.\n");
+    printf("  led mode  Used to control the led. \n");
+    printf("              Supported modes:\n");
+    printf("              0 .. turns the loed off.\n");
+    printf("              1 .. turns the led on.\n");
+    printf("              b .. let it blink.\n");
+    printf("  help      Prints this text.\n");
+
+    return 0;
+}
+
+/**
  * The table of supported commands.
  */
 cli_cmd_t cmd_table[] =
 {
    {"ver", cmd_ver}, /* print the version */
    {"led", cmd_led}, /* to control the led */
+   {"help", cmd_help}, /* to control the led */
    {0,      0}
 };
 
@@ -138,22 +158,19 @@ int main(void)
     systick_setup();
 
     printf("Command line interface demo.\n");
-    printf(VERSIONSTRING"\n");
-    printf("build: %s, %s\n", __DATE__, __TIME__);
-    printf("Buffersize: %d\n", BUFSIZ);
+    cmd_ver(0);
 
-    /* Start the commandline interface */
+    /* Initialize the command line interface */
     cli.init(cmd_table, arraysize(cmd_table));
 
     while (1)
     {
-        if (sysTick - lastTick > 250)
+        if (sysTick - lastTick >= 250)
         {
             lastTick = sysTick;
-
             if (ledMode == LED_BLINK)
             {
-                bspLedToggle();
+                bspGpioToggle(BSP_GPIO_LED);
             }
         }
 

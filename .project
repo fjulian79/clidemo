@@ -3,6 +3,7 @@
 	<name>clidemo</name>
 	<comment></comment>
 	<projects>
+		<project>bsp-nucleo-f103rb</project>
 		<project>libcli</project>
 	</projects>
 	<buildSpec>
