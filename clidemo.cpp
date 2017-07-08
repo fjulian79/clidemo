@@ -129,10 +129,21 @@ int8_t cmd_help(void* args)
     printf("  ver       Used to print version infos.\n");
     printf("  led mode  Used to control the led. \n");
     printf("              Supported modes:\n");
-    printf("              0 .. turns the loed off.\n");
+    printf("              0 .. turns the led off.\n");
     printf("              1 .. turns the led on.\n");
     printf("              b .. let it blink.\n");
     printf("  help      Prints this text.\n");
+
+    return 0;
+}
+
+int8_t cmd_cfg(void* args)
+{
+    unused(args);
+
+    printf("BSP_TTY_BUFFERSIZE:  %d\n", BSP_TTY_BUFFERSIZE);
+    printf("BSP_TTY_DMA_MODE:    %d\n", BSP_TTY_DMA_MODE);
+    printf("BSP_TTY_BLOCKING:    %d\n", BSP_TTY_BLOCKING);
 
     return 0;
 }
@@ -142,9 +153,10 @@ int8_t cmd_help(void* args)
  */
 cli_cmd_t cmd_table[] =
 {
-   {"ver", cmd_ver}, /* print the version */
-   {"led", cmd_led}, /* to control the led */
-   {"help", cmd_help}, /* to control the led */
+   {"ver", cmd_ver},    /* Print the version */
+   {"led", cmd_led},    /* To control the led */
+   {"help", cmd_help},  /* To control the led */
+   {"cfg", cmd_cfg},    /* To print the configuration */
    {0,      0}
 };
 
