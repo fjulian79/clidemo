@@ -5,23 +5,16 @@
  *      Author: julian
  */
 
-#include "libopencm3/stm32/rcc.h"
-#include "libopencm3/cm3/systick.h"
-
 #include "bsp/bsp.h"
 #include "bsp/bsp_gpio.h"
-#include "bsp/bsp_usart.h"
-
-#include "mybuildroot/common.h"
-#include "cli.h"
+#include "bsp/bsp_tty.h"
+#include "cli/cli.h"
+#include "generic/generic.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
-#define VERSIONSTRING      "rel_1_0_0"
-
-#define LED_PORT            GPIOA
-#define LED_PIN             GPIO5
+#define VERSIONSTRING      "rel_2_0_0"
 
 typedef enum
 {
@@ -39,37 +32,6 @@ Cli cli;
  * The mode of the led
  */
 led_mode_t ledMode = LED_BLINK;
-
-/**
- * Systick counter, one tick = 1ms
- */
-volatile uint32_t sysTick = 0;
-
-static void systick_setup(void)
-{
-    /* 72MHz / 8 => 9000000 counts per second */
-    systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
-
-    /*
-     * 9000000/9000 = 1000 overflows per second - every 1ms one interrupt
-     * SysTick interrupt every N clock pulses: set reload to N-1
-     * */
-    systick_set_reload(8999);
-
-    systick_interrupt_enable();
-    systick_counter_enable();
-}
-
-/**
- * As this is a C++ project we have to prevent the compiler from mangling the
- * function name with arguments to support function overloading. Doing so
- * allows to link with external C code.
- */
-extern "C"
-void sys_tick_handler(void)
-{
-    sysTick++;
-}
 
 /**
  * to print the version.
@@ -129,9 +91,11 @@ int8_t cmd_help(void* args)
     printf("  ver       Used to print version infos.\n");
     printf("  led mode  Used to control the led. \n");
     printf("              Supported modes:\n");
-    printf("              0 .. turns the led off.\n");
-    printf("              1 .. turns the led on.\n");
-    printf("              b .. let it blink.\n");
+    printf("              0 ... turns the led off.\n");
+    printf("              1 ... turns the led on.\n");
+    printf("              b ... let it blink.\n");
+    printf("  err ret   Used to test arros in a command.\n");
+    printf("              ret   return value.\n");
     printf("  help      Prints this text.\n");
 
     return 0;
@@ -141,11 +105,26 @@ int8_t cmd_cfg(void* args)
 {
     unused(args);
 
-    printf("BSP_TTY_BUFFERSIZE:  %d\n", BSP_TTY_BUFFERSIZE);
-    printf("BSP_TTY_DMA_MODE:    %d\n", BSP_TTY_DMA_MODE);
-    printf("BSP_TTY_BLOCKING:    %d\n", BSP_TTY_BLOCKING);
+    printf("BSP_TTY_BLOCKING:   %d\n", BSP_TTY_BLOCKING);
+    printf("BSP_TTY_TX_BUFSIZ:  %d\n", BSP_TTY_TX_BUFSIZ);
+    printf("BSP_TTY_TX_DMA:     %d\n", BSP_TTY_TX_DMA);
+    printf("BSP_TTY_RX_BUFSIZ:  %d\n", BSP_TTY_RX_BUFSIZ);
+    printf("BSP_TTY_RX_IRQ:     %d\n", BSP_TTY_RX_IRQ);
 
     return 0;
+}
+
+int8_t cmd_err(void* args)
+{
+    int16_t val = -1;
+
+    if (cli.get_parg())
+    {
+        cli.arg2int16(&val);
+        printf("Got value %d\n", val);
+    }
+
+    return (int8_t) val;
 }
 
 /**
@@ -157,6 +136,7 @@ cli_cmd_t cmd_table[] =
    {"led", cmd_led},    /* To control the led */
    {"help", cmd_help},  /* To control the led */
    {"cfg", cmd_cfg},    /* To print the configuration */
+   {"err", cmd_err},    /* To print the configuration */
    {0,      0}
 };
 
@@ -164,10 +144,7 @@ int main(void)
 {
     uint32_t lastTick = 0;
 
-    bspClockSetup(BSP_HSE_BYPASS_ON, BSP_CPU_SPEED_72MHZ);
-    bspLedInit();
-    bspTTYInit(115200);
-    systick_setup();
+    bspChipInit();
 
     printf("Command line interface demo.\n");
     cmd_ver(0);
