@@ -1,6 +1,6 @@
 [submodule "lib/bsp-nucleo-f103rb"]
 	path = lib/bsp-nucleo-f103rb
-	url = htsrv01:/home/git/repos/lib/bsp/bsp-nucleo-f103rb.git
+	url = htsrv01:/home/git/repos/bsp/bsp-nucleo-f103rb.git
 [submodule "lib/libgeneric"]
 	path = lib/libgeneric
 	url = htsrv01:/home/git/repos/lib/libgeneric.git
