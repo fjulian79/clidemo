@@ -87,15 +87,17 @@ int8_t cmd_help(char *argv[], uint8_t argc)
     unused(argc);
 
     printf("Supported commands:\n");
-    printf("  ver       Used to print version infos.\n");
-    printf("  led mode  Used to control the led. \n");
-    printf("              Supported modes:\n");
-    printf("              0 ... turns the led off.\n");
-    printf("              1 ... turns the led on.\n");
-    printf("              b ... let it blink.\n");
-    printf("  err ret   Used to test arros in a command.\n");
-    printf("              ret   return value.\n");
-    printf("  help      Prints this text.\n");
+    printf("  ver         Used to print version infos.\n");
+    printf("  led mode    Used to control the led. \n");
+    printf("                Supported modes:\n");
+    printf("                0 ... turns the led off.\n");
+    printf("                1 ... turns the led on.\n");
+    printf("                b ... let it blink.\n");
+    printf("  err ret     Used to test arros in a command.\n");
+    printf("                ret   return value.\n");
+    printf("  list [args] Used to test how arguments are parsed.\n");
+    printf("                args  a list of arguments.\n");
+    printf("  help        Prints this text.\n");
 
     return 0;
 }
@@ -127,16 +129,28 @@ int8_t cmd_err(char *argv[], uint8_t argc)
     return (int8_t) val;
 }
 
+int8_t cmd_list(char *argv[], uint8_t argc)
+{
+    printf("Recognized arguments:");
+    for(size_t i = 0; i < argc; i++)
+    {
+        printf("  argv[%d]: %s\n", i, argv[i]);
+    }
+    
+    return 0;
+}
+
 /**
  * The table of supported commands.
  */
 cliCmd_t cmdTable[] =
 {
-   {"ver", cmd_ver},    /* Print the version */
-   {"led", cmd_led},    /* To control the led */
-   {"help", cmd_help},  /* To control the led */
-   {"cfg", cmd_cfg},    /* To print the configuration */
-   {"err", cmd_err},    /* To print the configuration */
+   {"ver", cmd_ver},
+   {"led", cmd_led},
+   {"help", cmd_help},
+   {"cfg", cmd_cfg},
+   {"err", cmd_err},
+   {"list", cmd_list},
    {0,      0}
 };
 
