@@ -36,9 +36,10 @@ led_mode_t ledMode = LED_BLINK;
 /**
  * to print the version.
  */
-int8_t cmd_ver(void* args)
+int8_t cmd_ver(char *argv[], uint8_t argc)
 {
-	unused(args);
+    unused(argv);
+    unused(argc);
 
 	printf("version: %s\n", VERSIONSTRING);
     printf("build:   %s, %s\n", __DATE__, __TIME__);
@@ -48,30 +49,27 @@ int8_t cmd_ver(void* args)
 /**
  * To control the led
  */
-int8_t cmd_led(void* args)
+int8_t cmd_led(char *argv[], uint8_t argc)
 {
 	int8_t ret = 0;
-	char *c = cli.get_parg();
-
-	unused(args);
-
-	if (c == 0)
+	
+	if (argc != 1)
 	{
 		ret = -1;
 	    goto out;
 	}
 
-	if (*c == '0')
+	if (*argv[0] == '0')
 	{
 		ledMode = LED_STATIC;
 		bspGpioClear(BSP_GPIO_LED);
 	}
-	else if (*c == '1')
+	else if (*argv[0] == '1')
 	{
 		ledMode = LED_STATIC;
 		bspGpioSet(BSP_GPIO_LED);
 	}
-	else if (*c == 'b')
+	else if (*argv[0] == 'b')
 	{
 		ledMode = LED_BLINK;
 	}
@@ -83,9 +81,10 @@ int8_t cmd_led(void* args)
 /**
  * To to print the help text
  */
-int8_t cmd_help(void* args)
+int8_t cmd_help(char *argv[], uint8_t argc)
 {
-    unused(args);
+    unused(argv);
+    unused(argc);
 
     printf("Supported commands:\n");
     printf("  ver       Used to print version infos.\n");
@@ -101,9 +100,10 @@ int8_t cmd_help(void* args)
     return 0;
 }
 
-int8_t cmd_cfg(void* args)
+int8_t cmd_cfg(char *argv[], uint8_t argc)
 {
-    unused(args);
+    unused(argv);
+    unused(argc);
 
     printf("BSP_TTY_BLOCKING:   %d\n", BSP_TTY_BLOCKING);
     printf("BSP_TTY_TX_BUFSIZ:  %d\n", BSP_TTY_TX_BUFSIZ);
@@ -114,13 +114,13 @@ int8_t cmd_cfg(void* args)
     return 0;
 }
 
-int8_t cmd_err(void* args)
+int8_t cmd_err(char *argv[], uint8_t argc)
 {
     int16_t val = -1;
 
-    if (cli.get_parg())
+    if (argc > 0)
     {
-        cli.arg2int16(&val);
+        cli.toSigned(argv[0], &val, sizeof(val));
         printf("Got value %d\n", val);
     }
 
@@ -130,7 +130,7 @@ int8_t cmd_err(void* args)
 /**
  * The table of supported commands.
  */
-cli_cmd_t cmd_table[] =
+cliCmd_t cmdTable[] =
 {
    {"ver", cmd_ver},    /* Print the version */
    {"led", cmd_led},    /* To control the led */
@@ -147,10 +147,10 @@ int main(void)
     bspChipInit();
 
     printf("Command line interface demo.\n");
-    cmd_ver(0);
+    cmd_ver(0, 0);
 
     /* Initialize the command line interface */
-    cli.init(cmd_table, arraysize(cmd_table));
+    cli.init(cmdTable, arraysize(cmdTable));
 
     while (1)
     {
@@ -166,7 +166,7 @@ int main(void)
         if (bspTTYDataAvailable())
         {
         	/* pass rx data to the cli  */
-        	cli.proc_byte((uint8_t) bspTTYGetChar());
+        	cli.procByte((uint8_t) bspTTYGetChar());
         }
     }
 
