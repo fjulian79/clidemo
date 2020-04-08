@@ -173,10 +173,10 @@ int8_t cmd_err(char *argv[], uint8_t argc)
  */
 int8_t cmd_list(char *argv[], uint8_t argc)
 {
-    printf("Recognized arguments:");
+    printf("Recognized arguments:\n");
     for(size_t i = 0; i < argc; i++)
     {
-        printf("  argv[%d]: %s\n", i, argv[i]);
+        printf("  argv[%d]: \"%s\"\n", i, argv[i]);
     }
     
     return 0;
@@ -224,7 +224,6 @@ cliCmd_t cmdTable[] =
    {"err", cmd_err},
    {"list", cmd_list},
    {"help", cmd_help},
-   {0,      0}
 };
 
 int main(void)
