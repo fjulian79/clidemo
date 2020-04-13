@@ -182,6 +182,19 @@ int8_t cmd_list(char *argv[], uint8_t argc)
     return 0;
 }
 
+int8_t cmd_reset(char *argv[], uint8_t argc)
+{
+    unused(argv);
+    unused(argc);
+
+    printf("Resetting the CPU ...\n\n");
+    bspDelayMs(100);
+
+    bspResetCpu();
+
+    return 0;
+}
+
 /**
  * @brief To to print the help text.
  * 
@@ -208,6 +221,7 @@ int8_t cmd_help(char *argv[], uint8_t argc)
     printf("                ret   return value of the called function.\n");
     printf("  list [args] Used to test how arguments are parsed.\n");
     printf("                args  a list of arguments.\n");
+    printf("  reset       Used to reset the CPU.\n");
     printf("  help        Prints this text.\n");
 
     return 0;
@@ -223,6 +237,7 @@ cliCmd_t cmdTable[] =
    {"cfg", cmd_cfg},
    {"err", cmd_err},
    {"list", cmd_list},
+   {"reset", cmd_reset},
    {"help", cmd_help},
 };
 

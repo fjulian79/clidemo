@@ -61,8 +61,9 @@
  *
  * See bsp.h for min max vaules and how they should be interpreted.
  */
-#define BSP_SYSTICK_IRQ_PRIO            BSP_IRQPRIO_MAX
-#define BSP_TTY_USART_IRQ_PRIO          (BSP_IRQPRIO_MAX + 1)
+#define BSP_IRQPRIO_SYSTICK               BSP_IRQPRIO_MAX
+#define BSP_IRQPRIO_EXTI                  (BSP_IRQPRIO_MAX + 1)
+#define BSP_IRQPRIO_TTY                   (BSP_IRQPRIO_MAX + 2)
 /**
  * GPIO definitions.
  *
@@ -85,6 +86,20 @@
 /**
  * If enabled bsp_assert.h will implement assertions.
  */
-#define BSP_DOASSERT                    BSP_ENABLED
+#define BSP_ASSERT                        BSP_ENABLED
 
+/**
+ * Defines the period of the LED flashes in case of a asseetion
+ */
+#define BSP_ASSERT_LED_MS                 100
+
+/**
+ * If enabled assertions will cause a message on stderr
+ */
+#define BSP_ASSERT_MESSAGE                BSP_ENABLED
+
+/**
+ * Defines the intervall between asseet messages in ms
+ */
+#define BSP_ASSERT_MESSAGE_MS             5000
 #endif /* LIBBSP_NUCLEO_F103_BSP_CONFIG_H_ */
