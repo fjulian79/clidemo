@@ -20,48 +20,24 @@
  * You can file issues at https://github.com/fjulian79/libcli/issues
  */
 
-#ifndef CLI_CONFIG_H_
-#define CLI_CONFIG_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Defines the maximum length of a command including all arguments in 
  * bytes.
  */
-#define CLI_COMMANDSIZ              100
+//#define CLI_COMMANDSIZ              100
 
 /**
  * @brief Defines the maximum number of arguments.
  */
-#define CLI_ARGVSIZ                 4
+#define CLI_ARGVSIZ                 5
 
 /**
  * @brief Defines the command line prompt after a new line.
  */
-#define CLI_PROMPT                  "#>"
+//#define CLI_PROMPT                  "#>"
 
 /**
  * @brief Enable if stdio is buffered to call fflush(stdout) if needed.
  */
-#define CLI_BUFFEREDIO
+//#define CLI_BUFFEREDIO            0
 
-/**
- * @brief Used to enable serial echo.
- * 
- */
-#define CLI_ECHO
-
-/**
- * @brief Used to enable printgin the last command when invoked.
- */
-#define CLI_PRINTLASTCMD
-
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* CLI_CONFIG_H_ */
