@@ -176,6 +176,42 @@ int8_t cmd_list(char *argv[], uint8_t argc)
     return 0;
 }
 
+int8_t cmd_echo(char *argv[], uint8_t argc)
+{
+    bool state = true;
+
+    if(argc != 1)
+    {
+        return -1;
+    }
+
+    if(strcmp(argv[0],"on") == 0)
+    {
+        state = true;
+    }
+    else if(strcmp(argv[0],"off") == 0)
+    {
+        state = false;
+    }
+    else
+    {
+        return -2;
+    }
+
+    cli.setEcho(state);
+    Serial.printf("Echo is now %s\n", argv[0]);
+
+    return 0; 
+}
+
+int8_t cmd_bell(char *argv[], uint8_t argc)
+{
+    cli.sendBell();
+    Serial.printf("Sent a bell cmd\n");
+
+    return 0; 
+}
+
 int8_t cmd_reset(char *argv[], uint8_t argc)
 {
     Serial.printf("Resetting the CPU ...\n");
@@ -209,6 +245,8 @@ int8_t cmd_help(char *argv[], uint8_t argc)
     Serial.printf("                ret   return value of the called function.\n");
     Serial.printf("  list [args] Used to test how arguments are parsed.\n");
     Serial.printf("                args  a list of arguments.\n");
+    Serial.printf("  bell        Used to ring the bell of the host terminal.\n");
+    Serial.printf("  echo on|off Used to turn echo on or off.\n");
     Serial.printf("  reset       Used to reset the CPU.\n");
     Serial.printf("  help        Prints this text.\n");
 
@@ -225,6 +263,8 @@ cliCmd_t cmdTable[] =
    {"cfg", cmd_cfg},
    {"err", cmd_err},
    {"list", cmd_list},
+   {"bell", cmd_bell},
+   {"echo", cmd_echo},
    {"reset", cmd_reset},
    {"help", cmd_help},
 };
