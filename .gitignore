@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 .history
+include/git_version.h

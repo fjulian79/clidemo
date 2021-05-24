@@ -20,17 +20,22 @@
  */
 
 #include <Arduino.h>
-#include "cli/cli.h"
-#include "generic/generic.hpp"
+#include <cli/cli.h>
+#include <generic/generic.hpp>
+
+#include "git_version.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
+#ifdef ARDUINO_ARCH_ESP8266
 /**
- * @brief The version string of the application.
+ * @brief Currently there is no common code to get the rx buffer size of the
+ * default serial port, so we need platform dependant code here.
  * 
  */
-#define VERSIONSTRING      "rel_3_0_0"
+#define SERIAL_RX_BUFFER_SIZE       Serial.getRxBufferSize()
+#endif
 
 /**
  * @brief Defines the operational mode of the led.
@@ -63,14 +68,16 @@ led_mode_t ledMode = LED_BLINK;
  */
 int8_t cmd_ver(char *argv[], uint8_t argc)
 {
-    Serial.printf("\nclidemo %s Copyright (C) 2020 Julian Friedrich\n", 
-            VERSIONSTRING);
-    Serial.printf("build: %s, %s\n", __DATE__, __TIME__);
+    Serial.printf("\nclidemo %s, Copyright (C) 2021 Julian Friedrich\n", 
+            GIT_VERSION_SHORT);
+    Serial.printf("Build:    %s, %s\n", __DATE__, __TIME__);
+    Serial.printf("Git Repo: %s\n", GIT_REMOTE_ORIGIN_URL);
+    Serial.printf("Revision: %s\n", GIT_VERSION_LONG);
     Serial.printf("\n");
     Serial.printf("This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you\n");
     Serial.printf("are welcome to redistribute it under certain conditions.\n");
     Serial.printf("See GPL v3 licence at https://www.gnu.org/licenses/ for details.\n\n");
-       
+
     return 0;
 }
 
@@ -129,7 +136,7 @@ int8_t cmd_cfg(char *argv[], uint8_t argc)
     Serial.printf(" CLI_PROMPT:            %s\n", CLI_PROMPT);
     Serial.printf(" CLI_BUFFEREDIO:        %d\n", CLI_BUFFEREDIO);
     Serial.printf(" SERIAL_RX_BUFFER_SIZE: %d\n\n", SERIAL_RX_BUFFER_SIZE);
- 
+
     return 0;
 }
 
@@ -176,6 +183,13 @@ int8_t cmd_list(char *argv[], uint8_t argc)
     return 0;
 }
 
+/**
+ * @brief Used to change the echo mode of libcli
+ * 
+ * @param argv      Array of arguments.
+ * @param argc      Number of arguments.
+ * @return int8_t   Zero.
+ */
 int8_t cmd_echo(char *argv[], uint8_t argc)
 {
     bool state = true;
@@ -204,6 +218,13 @@ int8_t cmd_echo(char *argv[], uint8_t argc)
     return 0; 
 }
 
+/**
+ * @brief Rings the bell in the host terminal application.
+ * 
+ * @param argv      Array of arguments.
+ * @param argc      Number of arguments.
+ * @return int8_t   Zero.
+ */
 int8_t cmd_bell(char *argv[], uint8_t argc)
 {
     cli.sendBell();
@@ -212,6 +233,15 @@ int8_t cmd_bell(char *argv[], uint8_t argc)
     return 0; 
 }
 
+#ifdef ARDUINO_ARCH_STM32
+
+/**
+ * @brief Trigger a CPU reset on a STM32.
+ * 
+ * @param argv      Array of arguments.
+ * @param argc      Number of arguments.
+ * @return int8_t   Zero.
+ */
 int8_t cmd_reset(char *argv[], uint8_t argc)
 {
     Serial.printf("Resetting the CPU ...\n");
@@ -221,6 +251,8 @@ int8_t cmd_reset(char *argv[], uint8_t argc)
 
     return 0;
 }
+
+#endif
 
 /**
  * @brief To to print the help text.
@@ -247,7 +279,9 @@ int8_t cmd_help(char *argv[], uint8_t argc)
     Serial.printf("                args  a list of arguments.\n");
     Serial.printf("  bell        Used to ring the bell of the host terminal.\n");
     Serial.printf("  echo on|off Used to turn echo on or off.\n");
+#ifdef ARDUINO_ARCH_STM32
     Serial.printf("  reset       Used to reset the CPU.\n");
+#endif
     Serial.printf("  help        Prints this text.\n");
 
     return 0;
@@ -265,7 +299,9 @@ cliCmd_t cmdTable[] =
    {"list", cmd_list},
    {"bell", cmd_bell},
    {"echo", cmd_echo},
+#ifdef _ARCH_STM32
    {"reset", cmd_reset},
+#endif
    {"help", cmd_help},
 };
 
@@ -291,7 +327,7 @@ void loop()
         lastTick = tick;
         if (ledMode == LED_BLINK)
         {
-            digitalToggle(LED_BUILTIN);
+            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
         }
     }
 
