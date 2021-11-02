@@ -1,3 +1,0 @@
-[submodule "lib/libcli"]
-	path = lib/libcli
-	url = https://github.com/fjulian79/libcli.git
