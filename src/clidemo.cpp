@@ -1,7 +1,7 @@
 /*
  * clidemo, a example and test bench for my command line library libcli.
  *
- * Copyright (C) 2020 Julian Friedrich
+ * Copyright (C) 2023 Julian Friedrich
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +22,29 @@
 #include <Arduino.h>
 #include <cli/cli.hpp>
 #include <generic/generic.hpp>
+#include <generic/task.hpp>
 
 #include "version/version.h"
 
 #include <stdio.h>
 #include <stdint.h>
 
-#ifdef ARDUINO_ARCH_ESP8266
+#ifdef ARDUINO_ARCH_ESP8266 
 /**
  * @brief Currently there is no common code to get the rx buffer size of the
  * default serial port, so we need platform dependant code here.
  * 
  */
 #define SERIAL_RX_BUFFER_SIZE       Serial.getRxBufferSize()
+#endif
+
+#ifdef ARDUINO_ARCH_ESP32
+/**
+ * @brief Currently there is no common code to get the rx buffer size of the
+ * default serial port, so we need platform dependant code here.
+ * 
+ */
+#define SERIAL_RX_BUFFER_SIZE       0
 #endif
 
 /**
@@ -56,6 +66,11 @@ Cli cli;
  * @brief The operational mode of the led
  */
 led_mode_t ledMode = LED_BLINK;
+
+/**
+ * @brief To blink the led .. wohoo
+ */
+Task ledTask(250);
 
 /**
  * @brief Used to print the version informaton.
@@ -233,8 +248,6 @@ int8_t cmd_bell(char *argv[], uint8_t argc)
     return 0; 
 }
 
-#ifdef ARDUINO_ARCH_STM32
-
 /**
  * @brief Trigger a CPU reset on a STM32.
  * 
@@ -247,12 +260,18 @@ int8_t cmd_reset(char *argv[], uint8_t argc)
     Serial.printf("Resetting the CPU ...\n");
     delay(100);
 
+    #ifdef ARDUINO_ARCH_STM32
+    
     NVIC_SystemReset();
+    
+    #elif ARDUINO_ARCH_ESP32 || ARDUINO_ARCH_ESP8266
+    
+    ESP.restart();
+    
+    #endif
 
     return 0;
 }
-
-#endif
 
 /**
  * @brief To to print the help text.
@@ -279,9 +298,7 @@ int8_t cmd_help(char *argv[], uint8_t argc)
     Serial.printf("                args  a list of arguments.\n");
     Serial.printf("  bell        Used to ring the bell of the host terminal.\n");
     Serial.printf("  echo on|off Used to turn echo on or off.\n");
-#ifdef ARDUINO_ARCH_STM32
     Serial.printf("  reset       Used to reset the CPU.\n");
-#endif
     Serial.printf("  help        Prints this text.\n");
 
     return 0;
@@ -293,16 +310,13 @@ int8_t cmd_help(char *argv[], uint8_t argc)
 cliCmd_t cmdTable[] =
 {
     CLI_CMD_DEF(ver),
-    CLI_CMD_DEF(ver),
     CLI_CMD_DEF(led),
     CLI_CMD_DEF(cfg),
     CLI_CMD_DEF(err),
     CLI_CMD_DEF(list),
     CLI_CMD_DEF(bell),
     CLI_CMD_DEF(echo),
-#ifdef _ARCH_STM32
-    CLI_CMD_DEF{reset),
-#endif
+    CLI_CMD_DEF(reset),
     CLI_CMD_DEF(help),
 };
 
@@ -320,12 +334,10 @@ void setup()
 
 void loop()
 {
-    static uint32_t lastTick = 0;
-    uint32_t tick = millis();
+    uint32_t now = millis();
 
-    if (tick - lastTick >= 250)
+    if (ledTask.isScheduled(now))
     {
-        lastTick = tick;
         if (ledMode == LED_BLINK)
         {
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
