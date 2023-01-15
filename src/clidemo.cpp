@@ -74,14 +74,8 @@ Task ledTask(250);
 
 /**
  * @brief Used to print the version informaton.
- * 
- * This function has to match the p_cmd_func definition in libcli, see cliCmd_t.
- * 
- * @param argv      not used.
- * @param argc      not used.
- * @return int8_t   Zero.
  */
-int8_t cmd_ver(char *argv[], uint8_t argc)
+CLI_COMMAND(ver)
 {
     Serial.printf("\n%s %s, Copyright (C) 2021 Julian Friedrich\n", 
             VERSION_PROJECT, VERSION_GIT_SHORT);
@@ -103,14 +97,8 @@ int8_t cmd_ver(char *argv[], uint8_t argc)
  *      0 ... turns the LED off.
  *      1 ... turns the LED on.
  *      b ... let the LED blink.
- * 
- * This function has to match the p_cmd_func definition in libcli, see cliCmd_t.
- * 
- * @param argv      Array of arguments.
- * @param argc      Number of provided arguments.
- * @return int8_t   Zero.
  */
-int8_t cmd_led(char *argv[], uint8_t argc)
+CLI_COMMAND(led)
 {	
 	if (argc != 1)
 	{
@@ -137,14 +125,8 @@ int8_t cmd_led(char *argv[], uint8_t argc)
 
 /**
  * @brief This function prints the curent tty configuration.
- * 
- * This function has to match the p_cmd_func definition in libcli, see cliCmd_t.
- * 
- * @param argv      not used.
- * @param argc      not used.
- * @return int8_t   Zero.
  */
-int8_t cmd_cfg(char *argv[], uint8_t argc)
+CLI_COMMAND(cfg)
 {
     Serial.printf(" CLI_COMMANDSIZ:        %d\n", CLI_COMMANDSIZ);
     Serial.printf(" CLI_ARGVSIZ:           %d\n", CLI_ARGVSIZ);
@@ -158,14 +140,8 @@ int8_t cmd_cfg(char *argv[], uint8_t argc)
 /**
  * @brief This function return the value passed to it to test the error 
  * detection in libcli.
- * 
- * This function has to match the p_cmd_func definition in libcli, see cliCmd_t.
- *
- * @param argv      Array of arguments.
- * @param argc      Number of arguments.
- * @return int8_t   The provided value.
  */
-int8_t cmd_err(char *argv[], uint8_t argc)
+CLI_COMMAND(err)
 {
     int16_t val = -1;
 
@@ -180,14 +156,8 @@ int8_t cmd_err(char *argv[], uint8_t argc)
 
 /**
  * @brief The function will print all provided arguments.
- * 
- * This function has to match the p_cmd_func definition in libcli, see cliCmd_t.
- * 
- * @param argv      Array of arguments.
- * @param argc      Number of arguments.
- * @return int8_t   Zero.
  */
-int8_t cmd_list(char *argv[], uint8_t argc)
+CLI_COMMAND(list)
 {
     Serial.printf("Recognized arguments:\n");
     for(size_t i = 0; i < argc; i++)
@@ -200,12 +170,8 @@ int8_t cmd_list(char *argv[], uint8_t argc)
 
 /**
  * @brief Used to change the echo mode of libcli
- * 
- * @param argv      Array of arguments.
- * @param argc      Number of arguments.
- * @return int8_t   Zero.
  */
-int8_t cmd_echo(char *argv[], uint8_t argc)
+CLI_COMMAND(echo)
 {
     bool state = true;
 
@@ -235,12 +201,8 @@ int8_t cmd_echo(char *argv[], uint8_t argc)
 
 /**
  * @brief Rings the bell in the host terminal application.
- * 
- * @param argv      Array of arguments.
- * @param argc      Number of arguments.
- * @return int8_t   Zero.
  */
-int8_t cmd_bell(char *argv[], uint8_t argc)
+CLI_COMMAND(bell)
 {
     cli.sendBell();
     Serial.printf("Sent a bell cmd\n");
@@ -250,12 +212,8 @@ int8_t cmd_bell(char *argv[], uint8_t argc)
 
 /**
  * @brief Trigger a CPU reset on a STM32.
- * 
- * @param argv      Array of arguments.
- * @param argc      Number of arguments.
- * @return int8_t   Zero.
  */
-int8_t cmd_reset(char *argv[], uint8_t argc)
+CLI_COMMAND(reset)
 {
     Serial.printf("Resetting the CPU ...\n");
     delay(100);
@@ -275,14 +233,8 @@ int8_t cmd_reset(char *argv[], uint8_t argc)
 
 /**
  * @brief To to print the help text.
- * 
- * This function has to match the p_cmd_func definition in libcli, see cliCmd_t.
- * 
- * @param argv      not used.
- * @param argc      not used.
- * @return int8_t   Zero.
  */
-int8_t cmd_help(char *argv[], uint8_t argc)
+CLI_COMMAND(help)
 {
     Serial.printf("Supported commands:\n");
     Serial.printf("  ver         Used to print version infos.\n");
@@ -304,22 +256,6 @@ int8_t cmd_help(char *argv[], uint8_t argc)
     return 0;
 }
 
-/**
- * @brief The table of supported commands.
- */
-cliCmd_t cmdTable[] =
-{
-    CLI_CMD_DEF(ver),
-    CLI_CMD_DEF(led),
-    CLI_CMD_DEF(cfg),
-    CLI_CMD_DEF(err),
-    CLI_CMD_DEF(list),
-    CLI_CMD_DEF(bell),
-    CLI_CMD_DEF(echo),
-    CLI_CMD_DEF(reset),
-    CLI_CMD_DEF(help),
-};
-
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -329,7 +265,7 @@ void setup()
 
     Serial.println();
     cmd_ver(0, 0);
-    cli.begin(cmdTable);
+    cli.begin();
 }
 
 void loop()
@@ -344,5 +280,5 @@ void loop()
         }
     }
 
-    cli.read();
+    cli.loop();
 }
