@@ -71,6 +71,7 @@ led_mode_t ledMode = LED_BLINK;
  * @brief To blink the led .. wohoo
  */
 Task ledTask(250);
+Task serialTask(10);
 
 /**
  * @brief Used to print the version informaton.
@@ -256,15 +257,46 @@ CLI_COMMAND(help)
     return 0;
 }
 
+/**
+ * This task makes only sense on a ESP32 S2 as there the USB CDC Serial
+ * is aware of active connections. On all other boards it will work as well,
+ * but transition to state 2 and stay there for ever.
+ */
+void serialTaskFunction(uint32_t now)
+{
+    static uint8_t state = 0;
+
+    if (Serial && state == 0)
+    {
+        state = 1;
+        return;
+    }
+
+    if (state == 1)
+    {
+        state = 2;
+        Serial.println();
+        cmd_ver(0, 0);
+        cli.reset();
+    }
+
+    if (!Serial && state != 0)
+    {
+        state = 0;
+    }
+
+    if(state == 2)
+    {
+        cli.loop();
+    }
+}
+
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
- 
-    Serial.begin(115200);
-    while (!Serial);   
-
-    Serial.println();
-    cmd_ver(0, 0);
+    
+    Serial.begin(115200);  
+    serialTask.setTaskFunction(serialTaskFunction);
     cli.begin();
 }
 
@@ -272,7 +304,7 @@ void loop()
 {
     uint32_t now = millis();
 
-    if (ledTask.isScheduled(now))
+    if(ledTask.isScheduled(now))
     {
         if (ledMode == LED_BLINK)
         {
@@ -280,5 +312,5 @@ void loop()
         }
     }
 
-    cli.loop();
+    serialTask.loop(now);
 }
