@@ -38,7 +38,8 @@
 #define SERIAL_RX_BUFFER_SIZE       Serial.getRxBufferSize()
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
+/* Used for ESP32 and RP2040 */
+#ifndef SERIAL_RX_BUFFER_SIZE
 /**
  * @brief Currently there is no common code to get the rx buffer size of the
  * default serial port, so we need platform dependant code here.
@@ -227,8 +228,12 @@ CLI_COMMAND(reset)
     
     ESP.restart();
     
-    #endif
+    #elif ARDUINO_ARCH_RP2040
 
+    rp2040.reboot();
+
+    #endif
+    
     return 0;
 }
 
