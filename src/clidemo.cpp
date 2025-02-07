@@ -27,6 +27,7 @@
 #include <generic/task.hpp>
 
 #include "version/version.h"
+#include "telnetserver.hpp"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -67,6 +68,11 @@ typedef enum
  * @brief The global command line interface instance.
  */
 Cli cli;
+
+/**
+ * @brief The global telnet server instance.
+ */
+TelnetServer telnetServer;
 
 /**
  * @brief The operational mode of the led
@@ -258,6 +264,25 @@ CLI_COMMAND(reset)
     return 0;
 }
 
+CLI_COMMAND(telnet)
+{
+    if (argc == 3 && strcmp(argv[0], "begin") == 0)
+    {
+        telnetServer.wifiSetup((char*) argv[1], (char*) argv[2]);
+        telnetServer.begin();
+        return 0;
+    }
+    
+    if(argc == 1 && strcmp(argv[0], "info") == 0)
+    {
+        telnetServer.info(ioStream);
+        ioStream.printf("\n");
+        return 0;
+    }
+ 
+    return -1;
+}
+
 /**
  * @brief Print's the help text.
  */
@@ -265,23 +290,30 @@ CLI_COMMAND(help)
 {
     ioStream.printf("Supported commands:\n");
     ioStream.printf("  ver            Used to print version infos.\n");
-    ioStream.printf("  led mode       Used to control the led. \n");
-    ioStream.printf("                   Supported modes:\n");
-    ioStream.printf("                   0 ... turns the led off.\n");
-    ioStream.printf("                   1 ... turns the led on.\n");
-    ioStream.printf("                   b ... let it blink.\n");
+    ioStream.printf("  led 0|1|b      Used to control the led. \n");
+    ioStream.printf("                   0   turns the led off.\n");
+    ioStream.printf("                   1   turns the led on.\n");
+    ioStream.printf("                   b   let it blink.\n");
+    ioStream.printf("  telnet cmd     Used to control the telnet server.\n");
+    ioStream.printf("                   begin ssid passwd\n");
+    ioStream.printf("                   info\n");
     ioStream.printf("  info           Used to print lib cli infos.\n");
     ioStream.printf("  err ret        Used to test errors in a command.\n");
-    ioStream.printf("                   ret   return value of the called function.\n");
+    ioStream.printf("                   ret   return value of the command.\n");
     ioStream.printf("  list [args]    Used to test how arguments are parsed.\n");
-    ioStream.printf("                   args  a list of arguments.\n");
     ioStream.printf("  bell           Used to ring the bell of the host terminal.\n");
     ioStream.printf("  echo on|off    Used to turn echo on or off.\n");
     ioStream.printf("  reset          Used to reset the CPU.\n");
     ioStream.printf("  help           Prints this text.\n");
+    ioStream.printf("\n");
 
     return 0;
 }
+
+/**
+ * To test if disabled preprocessor blocks are handled correctly.
+ */
+#if 1
 
 /**
  * @brief Dummy command to check the dropCnt.
@@ -294,6 +326,8 @@ CLI_COMMAND(dummy)
     ioStream.printf("I'm used do check the dropCnt.\n");
     return 0;
 }
+
+#endif
 
 /**
  * This task makes only sense on a MCU's with build in USB CDC Serial which
@@ -315,6 +349,7 @@ void serialTaskFunction(uint32_t now)
         state = 2;
         Serial.println();
         cmd_ver(Serial, 0, 0);
+        Serial.printf("Use the 'help' command to get a list of available commands.\n\n");
         cli.begin();
     }
 
@@ -350,4 +385,5 @@ void loop()
     }
 
     serialTask.loop(now);
+    telnetServer.loop();
 }
