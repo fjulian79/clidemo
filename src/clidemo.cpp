@@ -1,7 +1,7 @@
 /*
  * clidemo, a example and test bench for my command line library libcli.
  *
- * Copyright (C) 2023 Julian Friedrich
+ * Copyright (C) 2025 Julian Friedrich
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>. 
  *
- * You can file issues at https://github.com/fjulian79/clidemo/issues
+ * This project is hosted on GitHub:
+ *   https://github.com/fjulian79/clidemo
+ * Please feel free to file issues, open pull requests, or contribute there.
  */
 
 #include <Arduino.h>
@@ -38,8 +40,11 @@
 #define SERIAL_RX_BUFFER_SIZE       Serial.getRxBufferSize()
 #endif
 
-/* Used for ESP32 and RP2040 */
+/**
+ * @brief Needed for ESP32 and RP2040 build tarets.
+ */
 #ifndef SERIAL_RX_BUFFER_SIZE
+
 /**
  * @brief Currently there is no common code to get the rx buffer size of the
  * default serial port, so we need platform dependant code here.
@@ -75,30 +80,26 @@ Task ledTask(250);
 Task serialTask(10);
 
 /**
- * @brief Used to print the version informaton.
+ * @brief Used to print version information.
  */
 CLI_COMMAND(ver)
 {
-    Serial.printf("\n%s %s, Copyright (C) 2021 Julian Friedrich\n", 
+    ioStream.printf("\n%s %s, Copyright (C) 2025 Julian Friedrich\n", 
             VERSION_PROJECT, VERSION_GIT_SHORT);
-    Serial.printf("Build:    %s, %s\n", __DATE__, __TIME__);
-    Serial.printf("Git Repo: %s\n", VERSION_GIT_REMOTE_ORIGIN);
-    Serial.printf("Revision: %s\n", VERSION_GIT_LONG);
-    Serial.printf("\n");
-    Serial.printf("This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you\n");
-    Serial.printf("are welcome to redistribute it under certain conditions.\n");
-    Serial.printf("See GPL v3 licence at https://www.gnu.org/licenses/ for details.\n\n");
+    ioStream.printf("Build:    %s, %s\n", __DATE__, __TIME__);
+    ioStream.printf("Git Repo: %s\n", VERSION_GIT_REMOTE_ORIGIN);
+    ioStream.printf("Revision: %s\n", VERSION_GIT_LONG);
+    ioStream.printf("\n");
+    ioStream.printf("This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you\n");
+    ioStream.printf("are welcome to redistribute it under certain conditions.\n");
+    ioStream.printf("See GPL v3 licence at https://www.gnu.org/licenses/ for details.\n\n");
 
     return 0;
 }
 
 /**
  * @brief Used to control the on board led
- *
- * Supports one argument in from of a character.
- *      0 ... turns the LED off.
- *      1 ... turns the LED on.
- *      b ... let the LED blink.
+ * @arg   mode  0|1|b
  */
 CLI_COMMAND(led)
 {	
@@ -126,22 +127,36 @@ CLI_COMMAND(led)
 }
 
 /**
- * @brief This function prints the curent tty configuration.
+ * @brief Prints infos on lib cli
  */
-CLI_COMMAND(cfg)
+CLI_COMMAND(info)
 {
-    Serial.printf(" CLI_COMMANDSIZ:        %d\n", CLI_COMMANDSIZ);
-    Serial.printf(" CLI_ARGVSIZ:           %d\n", CLI_ARGVSIZ);
-    Serial.printf(" CLI_PROMPT:            %s\n", CLI_PROMPT);
-    Serial.printf(" CLI_BUFFEREDIO:        %d\n", CLI_BUFFEREDIO);
-    Serial.printf(" SERIAL_RX_BUFFER_SIZE: %d\n\n", SERIAL_RX_BUFFER_SIZE);
+    cliCmd_t *pCmdTab = CliCommand::getTable();
+    size_t cmdCnt = CliCommand::getCmdCnt();
+    size_t dropCnt = CliCommand::getDropCnt();
+
+    ioStream.printf("  CLI_COMMANDSIZ:        %d\n", CLI_COMMANDSIZ);
+    ioStream.printf("  CLI_ARGVSIZ:           %d\n", CLI_ARGVSIZ);
+    ioStream.printf("  CLI_PROMPT:            %s\n", CLI_PROMPT);
+    ioStream.printf("  CLI_BUFFEREDIO:        %d\n", CLI_BUFFEREDIO);
+    ioStream.printf("  SERIAL_RX_BUFFER_SIZE: %d\n", SERIAL_RX_BUFFER_SIZE);
+    ioStream.printf("  Supported commands:    %d\n", CLI_COMMANDS_MAX);
+    ioStream.printf("  Registered commands:   %d\n", cmdCnt);
+    ioStream.printf("  Dropped commands:      %d\n", dropCnt);
+    ioStream.printf("  Command name's:\n");
+
+    for(size_t i = 0; i < cmdCnt; i++)
+    {
+        ioStream.printf("    %s\n", pCmdTab[i].name);
+    }  
+    ioStream.print("\n");
 
     return 0;
 }
 
 /**
- * @brief This function return the value passed to it to test the error 
- * detection in libcli.
+ * @brief Used to test errors in a command.
+ * @arg   ret return value of the command
  */
 CLI_COMMAND(err)
 {
@@ -150,21 +165,22 @@ CLI_COMMAND(err)
     if (argc > 0)
     {
         val = strtol(argv[0],0 ,0);
-        Serial.printf("Got value %d\n", val);
+        ioStream.printf("Got value %d\n", val);
     }
 
     return (int8_t) val;
 }
 
 /**
- * @brief The function will print all provided arguments.
+ * @brief Prints all provided arguments.
+ * @arg   [args] Optional list of arguments.
  */
-CLI_COMMAND(list)
+CLI_COMMAND(args)
 {
-    Serial.printf("Recognized arguments:\n");
+    ioStream.printf("Recognized arguments:\n");
     for(size_t i = 0; i < argc; i++)
     {
-        Serial.printf("  argv[%d]: \"%s\"\n", i, argv[i]);
+        ioStream.printf("  argv[%d]: \"%s\"\n", i, argv[i]);
     }
     
     return 0;
@@ -172,6 +188,7 @@ CLI_COMMAND(list)
 
 /**
  * @brief Used to change the echo mode of libcli
+ * @arg   mode on|off
  */
 CLI_COMMAND(echo)
 {
@@ -196,28 +213,28 @@ CLI_COMMAND(echo)
     }
 
     cli.setEcho(state);
-    Serial.printf("Echo is now %s\n", argv[0]);
+    ioStream.printf("Echo is now %s\n", argv[0]);
 
     return 0; 
 }
 
 /**
- * @brief Rings the bell in the host terminal application.
+ * @brief Rings the bell in the host terminal.
  */
 CLI_COMMAND(bell)
 {
     cli.sendBell();
-    Serial.printf("Sent a bell cmd\n");
+    ioStream.printf("Sent a bell cmd\n");
 
     return 0; 
 }
 
 /**
- * @brief Trigger a CPU reset on a STM32.
+ * @brief Trigger a CPU reset.
  */
 CLI_COMMAND(reset)
 {
-    Serial.printf("Resetting the CPU ...\n");
+    ioStream.printf("Resetting the CPU ...\n");
     delay(100);
 
     #ifdef ARDUINO_ARCH_STM32
@@ -232,38 +249,54 @@ CLI_COMMAND(reset)
 
     rp2040.reboot();
 
+    #else
+
+    ioStream.printf("ERROR: reset is not implemented for this platform.\n");
+
     #endif
     
     return 0;
 }
 
 /**
- * @brief To to print the help text.
+ * @brief Print's the help text.
  */
 CLI_COMMAND(help)
 {
-    Serial.printf("Supported commands:\n");
-    Serial.printf("  ver         Used to print version infos.\n");
-    Serial.printf("  led mode    Used to control the led. \n");
-    Serial.printf("                Supported modes:\n");
-    Serial.printf("                0 ... turns the led off.\n");
-    Serial.printf("                1 ... turns the led on.\n");
-    Serial.printf("                b ... let it blink.\n");
-    Serial.printf("  cfg         Used to print the tty configuration.\n");
-    Serial.printf("  err ret     Used to test errors in a command.\n");
-    Serial.printf("                ret   return value of the called function.\n");
-    Serial.printf("  list [args] Used to test how arguments are parsed.\n");
-    Serial.printf("                args  a list of arguments.\n");
-    Serial.printf("  bell        Used to ring the bell of the host terminal.\n");
-    Serial.printf("  echo on|off Used to turn echo on or off.\n");
-    Serial.printf("  reset       Used to reset the CPU.\n");
-    Serial.printf("  help        Prints this text.\n");
+    ioStream.printf("Supported commands:\n");
+    ioStream.printf("  ver            Used to print version infos.\n");
+    ioStream.printf("  led mode       Used to control the led. \n");
+    ioStream.printf("                   Supported modes:\n");
+    ioStream.printf("                   0 ... turns the led off.\n");
+    ioStream.printf("                   1 ... turns the led on.\n");
+    ioStream.printf("                   b ... let it blink.\n");
+    ioStream.printf("  info           Used to print lib cli infos.\n");
+    ioStream.printf("  err ret        Used to test errors in a command.\n");
+    ioStream.printf("                   ret   return value of the called function.\n");
+    ioStream.printf("  list [args]    Used to test how arguments are parsed.\n");
+    ioStream.printf("                   args  a list of arguments.\n");
+    ioStream.printf("  bell           Used to ring the bell of the host terminal.\n");
+    ioStream.printf("  echo on|off    Used to turn echo on or off.\n");
+    ioStream.printf("  reset          Used to reset the CPU.\n");
+    ioStream.printf("  help           Prints this text.\n");
 
     return 0;
 }
 
 /**
- * This task makes only sense on a ESP32 S2 as there the USB CDC Serial
+ * @brief Dummy command to check the dropCnt.
+ * 
+ * The number of supporded commands is set to 9 in platformio.ini. So this one 
+ * here shold be dropped. Can be checked with the info command.
+ */
+CLI_COMMAND(dummy)  
+{
+    ioStream.printf("I'm used do check the dropCnt.\n");
+    return 0;
+}
+
+/**
+ * This task makes only sense on a MCU's with build in USB CDC Serial which
  * is aware of active connections. On all other boards it will work as well,
  * but transition to state 2 and stay there for ever.
  */
@@ -281,8 +314,8 @@ void serialTaskFunction(uint32_t now)
     {
         state = 2;
         Serial.println();
-        cmd_ver(0, 0);
-        cli.reset();
+        cmd_ver(Serial, 0, 0);
+        cli.begin();
     }
 
     if (!Serial && state != 0)
@@ -302,7 +335,6 @@ void setup()
     
     Serial.begin(115200);  
     serialTask.setTaskFunction(serialTaskFunction);
-    cli.begin();
 }
 
 void loop()
