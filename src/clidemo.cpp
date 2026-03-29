@@ -340,17 +340,18 @@ void serialTaskFunction(uint32_t now)
 
     if (Serial && state == 0)
     {
+        Serial.begin(115200);
         state = 1;
         return;
     }
 
     if (state == 1)
     {
-        state = 2;
         Serial.println();
         cmd_ver(Serial, 0, 0);
         Serial.printf("Use the 'help' command to get a list of available commands.\n\n");
         cli.begin();
+        state = 2;
     }
 
     if (!Serial && state != 0)
@@ -367,8 +368,7 @@ void serialTaskFunction(uint32_t now)
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
-    
-    Serial.begin(115200);  
+
     serialTask.setTaskFunction(serialTaskFunction);
 }
 
