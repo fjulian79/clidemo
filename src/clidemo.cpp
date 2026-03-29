@@ -1,7 +1,7 @@
 /*
  * clidemo, a example and test bench for my command line library libcli.
  *
- * Copyright (C) 2025 Julian Friedrich
+ * Copyright (C) 2026 Julian Friedrich
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,11 +57,9 @@
 /**
  * @brief Defines the operational mode of the led.
  */
-typedef enum
-{
+typedef enum{
 	LED_STATIC = 0,
 	LED_BLINK
-
 }led_mode_t;
 
 /**
@@ -88,8 +86,7 @@ Task serialTask(10);
 /**
  * @brief Used to print version information.
  */
-CLI_COMMAND(ver)
-{
+CLI_COMMAND(ver) {
     ioStream.printf("\n%s %s, Copyright (C) 2025 Julian Friedrich\n",
             VERSION_PROJECT, VERSION_GIT_SHORT);
     ioStream.printf("Build:    %s, %s\n", __DATE__, __TIME__);
@@ -107,25 +104,18 @@ CLI_COMMAND(ver)
  * @brief Used to control the on board led
  * @arg   mode  0|1|b
  */
-CLI_COMMAND(led)
-{
-	if (argc != 1)
-	{
+CLI_COMMAND(led) {
+	if (argc != 1) {
 		return -1;
 	}
 
-	if (*argv[0] == '0')
-	{
+	if (*argv[0] == '0') {
 		ledMode = LED_STATIC;
 		digitalWrite(LED_BUILTIN, 0);
-	}
-	else if (*argv[0] == '1')
-	{
+	} else if (*argv[0] == '1') {
 		ledMode = LED_STATIC;
 		digitalWrite(LED_BUILTIN, 1);
-	}
-	else if (*argv[0] == 'b')
-	{
+	} else if (*argv[0] == 'b') {
 		ledMode = LED_BLINK;
 	}
 
@@ -135,8 +125,7 @@ CLI_COMMAND(led)
 /**
  * @brief Prints infos on lib cli
  */
-CLI_COMMAND(info)
-{
+CLI_COMMAND(info) {
     cliCmd_t *pCmdTab = CliCommand::getTable();
     size_t cmdCnt = CliCommand::getCmdCnt();
     size_t dropCnt = CliCommand::getDropCnt();
@@ -154,8 +143,7 @@ CLI_COMMAND(info)
     ioStream.printf("  Dropped commands:      %d\n", dropCnt);
     ioStream.printf("  Registered Command's:\n");
 
-    for(size_t i = 0; i < cmdCnt; i++)
-    {
+    for(size_t i = 0; i < cmdCnt; i++){
         ioStream.printf("    %s\n", pCmdTab[i].name);
     }
     ioStream.print("\n");
@@ -167,12 +155,10 @@ CLI_COMMAND(info)
  * @brief Used to test errors in a command.
  * @arg   ret return value of the command
  */
-CLI_COMMAND(err)
-{
+CLI_COMMAND(err) {
     int16_t val = -1;
 
-    if (argc > 0)
-    {
+    if (argc > 0) {
         val = strtol(argv[0],0 ,0);
         ioStream.printf("Got value %d\n", val);
     }
@@ -184,11 +170,9 @@ CLI_COMMAND(err)
  * @brief Prints all provided arguments.
  * @arg   [args] Optional list of arguments.
  */
-CLI_COMMAND(args)
-{
+CLI_COMMAND(args) {
     ioStream.printf("Recognized arguments:\n");
-    for(size_t i = 0; i < argc; i++)
-    {
+    for(size_t i = 0; i < argc; i++) {
         ioStream.printf("  argv[%d]: \"%s\"\n", i, argv[i]);
     }
 
@@ -199,25 +183,18 @@ CLI_COMMAND(args)
  * @brief Used to change the echo mode of libcli
  * @arg   mode on|off
  */
-CLI_COMMAND(echo)
-{
+CLI_COMMAND(echo) {
     bool state = true;
 
-    if(argc != 1)
-    {
+    if(argc != 1) {
         return -1;
     }
 
-    if(strcmp(argv[0],"on") == 0)
-    {
+    if(strcmp(argv[0],"on") == 0) {
         state = true;
-    }
-    else if(strcmp(argv[0],"off") == 0)
-    {
+    } else if(strcmp(argv[0],"off") == 0) {
         state = false;
-    }
-    else
-    {
+    } else{
         return -2;
     }
 
@@ -230,8 +207,7 @@ CLI_COMMAND(echo)
 /**
  * @brief Rings the bell in the host terminal.
  */
-CLI_COMMAND(bell)
-{
+CLI_COMMAND(bell) {
     cli.sendBell();
     ioStream.printf("Sent a bell cmd\n");
 
@@ -241,8 +217,7 @@ CLI_COMMAND(bell)
 /**
  * @brief Trigger a CPU reset.
  */
-CLI_COMMAND(reset)
-{
+CLI_COMMAND(reset) {
     ioStream.printf("Resetting the CPU ...\n");
     delay(100);
 
@@ -267,17 +242,14 @@ CLI_COMMAND(reset)
     return 0;
 }
 
-CLI_COMMAND(telnet)
-{
-    if (argc == 3 && strcmp(argv[0], "begin") == 0)
-    {
+CLI_COMMAND(telnet) {
+    if (argc == 3 && strcmp(argv[0], "begin") == 0) {
         telnetServer.wifiSetup((char*) argv[1], (char*) argv[2]);
         telnetServer.begin();
         return 0;
     }
 
-    if(argc == 1 && strcmp(argv[0], "info") == 0)
-    {
+    if(argc == 1 && strcmp(argv[0], "info") == 0) {
         telnetServer.info(ioStream);
         ioStream.printf("\n");
         return 0;
@@ -289,25 +261,26 @@ CLI_COMMAND(telnet)
 /**
  * @brief Print's the help text.
  */
-CLI_COMMAND(help)
-{
+CLI_COMMAND(help) {
     ioStream.printf("Supported commands:\n");
-    ioStream.printf("  ver            Used to print version infos.\n");
-    ioStream.printf("  led 0|1|b      Used to control the led. \n");
-    ioStream.printf("                   0   turns the led off.\n");
-    ioStream.printf("                   1   turns the led on.\n");
-    ioStream.printf("                   b   let it blink.\n");
-    ioStream.printf("  telnet cmd     Used to control the telnet server.\n");
-    ioStream.printf("                   begin ssid passwd\n");
-    ioStream.printf("                   info\n");
-    ioStream.printf("  info           Used to print lib cli infos.\n");
-    ioStream.printf("  err ret        Used to test errors in a command.\n");
-    ioStream.printf("                   ret   return value of the command.\n");
-    ioStream.printf("  list [args]    Used to test how arguments are parsed.\n");
-    ioStream.printf("  bell           Used to ring the bell of the host terminal.\n");
-    ioStream.printf("  echo on|off    Used to turn echo on or off.\n");
-    ioStream.printf("  reset          Used to reset the CPU.\n");
-    ioStream.printf("  help           Prints this text.\n");
+    ioStream.printf("  ver             Used to print version infos.\n");
+    ioStream.printf("  led 0|1|b       Used to control the led. \n");
+    ioStream.printf("                    0   turns the led off.\n");
+    ioStream.printf("                    1   turns the led on.\n");
+    ioStream.printf("                    b   let it blink.\n");
+    ioStream.printf("  telnet cmd      Used to control the telnet server.\n");
+    ioStream.printf("                    begin ssid passwd\n");
+    ioStream.printf("                    info\n");
+    ioStream.printf("  info            Used to print lib cli infos.\n");
+    ioStream.printf("  unittest <test> Used to run unit tests.\n");
+    ioStream.printf("                    Use argument 'all' to run all tests.\n");
+    ioStream.printf("  err ret         Used to test errors in a command.\n");
+    ioStream.printf("                    ret   return value of the command.\n");
+    ioStream.printf("  list [args]     Used to test how arguments are parsed.\n");
+    ioStream.printf("  bell            Used to ring the bell of the host terminal.\n");
+    ioStream.printf("  echo on|off     Used to turn echo on or off.\n");
+    ioStream.printf("  reset           Used to reset the CPU.\n");
+    ioStream.printf("  help            Prints this text.\n");
     ioStream.printf("\n");
 
     return 0;
@@ -324,8 +297,7 @@ CLI_COMMAND(help)
  * The number of supporded commands is set to 9 in platformio.ini. So this one
  * here shold be dropped. Can be checked with the info command.
  */
-CLI_COMMAND(dummy)
-{
+CLI_COMMAND(dummy) {
     ioStream.printf("I'm used do check the dropCnt.\n");
     return 0;
 }
@@ -337,19 +309,16 @@ CLI_COMMAND(dummy)
  * is aware of active connections. On all other boards it will work as well,
  * but transition to state 2 and stay there for ever.
  */
-void serialTaskFunction(uint32_t now)
-{
+void serialTaskFunction(uint32_t now) {
     static uint8_t state = 0;
 
-    if (Serial && state == 0)
-    {
+    if (Serial && state == 0) {
         Serial.begin(115200);
         state = 1;
         return;
     }
 
-    if (state == 1)
-    {
+    if (state == 1) {
         Serial.println();
         cmd_ver(Serial, 0, 0);
         Serial.printf("Use the 'help' command to get a list of available commands.\n\n");
@@ -357,32 +326,26 @@ void serialTaskFunction(uint32_t now)
         state = 2;
     }
 
-    if (!Serial && state != 0)
-    {
+    if (!Serial && state != 0) {
         state = 0;
     }
 
-    if(state == 2)
-    {
+    if(state == 2) {
         cli.loop();
     }
 }
 
-void setup()
-{
+void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     serialTask.setTaskFunction(serialTaskFunction);
 }
 
-void loop()
-{
+void loop() {
     uint32_t now = millis();
 
-    if(ledTask.isScheduled(now))
-    {
-        if (ledMode == LED_BLINK)
-        {
+    if(ledTask.isScheduled(now)) {
+        if (ledMode == LED_BLINK) {
             digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
         }
     }
