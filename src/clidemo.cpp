@@ -141,7 +141,10 @@ CLI_COMMAND(info)
     size_t cmdCnt = CliCommand::getCmdCnt();
     size_t dropCnt = CliCommand::getDropCnt();
 
+    ioStream.printf("\nLib Cli Infos:\n");
+    ioStream.printf("  Version:               %s\n", CLI_VERSION);
     ioStream.printf("  CLI_COMMANDSIZ:        %d\n", CLI_COMMANDSIZ);
+    ioStream.printf("  CLI_HISTORYSIZ:        %d\n", CLI_HISTORYSIZ);
     ioStream.printf("  CLI_ARGVSIZ:           %d\n", CLI_ARGVSIZ);
     ioStream.printf("  CLI_PROMPT:            %s\n", CLI_PROMPT);
     ioStream.printf("  CLI_BUFFEREDIO:        %d\n", CLI_BUFFEREDIO);
