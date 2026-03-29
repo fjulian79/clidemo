@@ -181,7 +181,7 @@ bool TelnetServer::clientConnected(void)
     return false;
 }
 
-void info(Stream &ioStream)
+void TelnetServer::info(Stream &ioStream)
 {
     Serial.println("Telnet-Server not supported on this platform.");
 }
