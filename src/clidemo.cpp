@@ -2,19 +2,19 @@
  * clidemo, a example and test bench for my command line library libcli.
  *
  * Copyright (C) 2025 Julian Friedrich
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>. 
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * This project is hosted on GitHub:
  *   https://github.com/fjulian79/clidemo
@@ -32,11 +32,11 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#ifdef ARDUINO_ARCH_ESP8266 
+#ifdef ARDUINO_ARCH_ESP8266
 /**
  * @brief Currently there is no common code to get the rx buffer size of the
  * default serial port, so we need platform dependant code here.
- * 
+ *
  */
 #define SERIAL_RX_BUFFER_SIZE       Serial.getRxBufferSize()
 #endif
@@ -49,7 +49,7 @@
 /**
  * @brief Currently there is no common code to get the rx buffer size of the
  * default serial port, so we need platform dependant code here.
- * 
+ *
  */
 #define SERIAL_RX_BUFFER_SIZE       0
 #endif
@@ -90,7 +90,7 @@ Task serialTask(10);
  */
 CLI_COMMAND(ver)
 {
-    ioStream.printf("\n%s %s, Copyright (C) 2025 Julian Friedrich\n", 
+    ioStream.printf("\n%s %s, Copyright (C) 2025 Julian Friedrich\n",
             VERSION_PROJECT, VERSION_GIT_SHORT);
     ioStream.printf("Build:    %s, %s\n", __DATE__, __TIME__);
     ioStream.printf("Git Repo: %s\n", VERSION_GIT_REMOTE_ORIGIN);
@@ -108,7 +108,7 @@ CLI_COMMAND(ver)
  * @arg   mode  0|1|b
  */
 CLI_COMMAND(led)
-{	
+{
 	if (argc != 1)
 	{
 		return -1;
@@ -149,12 +149,12 @@ CLI_COMMAND(info)
     ioStream.printf("  Supported commands:    %d\n", CLI_COMMANDS_MAX);
     ioStream.printf("  Registered commands:   %d\n", cmdCnt);
     ioStream.printf("  Dropped commands:      %d\n", dropCnt);
-    ioStream.printf("  Command name's:\n");
+    ioStream.printf("  Registered Command's:\n");
 
     for(size_t i = 0; i < cmdCnt; i++)
     {
         ioStream.printf("    %s\n", pCmdTab[i].name);
-    }  
+    }
     ioStream.print("\n");
 
     return 0;
@@ -188,7 +188,7 @@ CLI_COMMAND(args)
     {
         ioStream.printf("  argv[%d]: \"%s\"\n", i, argv[i]);
     }
-    
+
     return 0;
 }
 
@@ -221,7 +221,7 @@ CLI_COMMAND(echo)
     cli.setEcho(state);
     ioStream.printf("Echo is now %s\n", argv[0]);
 
-    return 0; 
+    return 0;
 }
 
 /**
@@ -232,7 +232,7 @@ CLI_COMMAND(bell)
     cli.sendBell();
     ioStream.printf("Sent a bell cmd\n");
 
-    return 0; 
+    return 0;
 }
 
 /**
@@ -244,13 +244,13 @@ CLI_COMMAND(reset)
     delay(100);
 
     #ifdef ARDUINO_ARCH_STM32
-    
+
     NVIC_SystemReset();
-    
+
     #elif ARDUINO_ARCH_ESP32 || ARDUINO_ARCH_ESP8266
-    
+
     ESP.restart();
-    
+
     #elif ARDUINO_ARCH_RP2040
 
     rp2040.reboot();
@@ -260,7 +260,7 @@ CLI_COMMAND(reset)
     ioStream.printf("ERROR: reset is not implemented for this platform.\n");
 
     #endif
-    
+
     return 0;
 }
 
@@ -272,14 +272,14 @@ CLI_COMMAND(telnet)
         telnetServer.begin();
         return 0;
     }
-    
+
     if(argc == 1 && strcmp(argv[0], "info") == 0)
     {
         telnetServer.info(ioStream);
         ioStream.printf("\n");
         return 0;
     }
- 
+
     return -1;
 }
 
@@ -317,11 +317,11 @@ CLI_COMMAND(help)
 
 /**
  * @brief Dummy command to check the dropCnt.
- * 
- * The number of supporded commands is set to 9 in platformio.ini. So this one 
+ *
+ * The number of supporded commands is set to 9 in platformio.ini. So this one
  * here shold be dropped. Can be checked with the info command.
  */
-CLI_COMMAND(dummy)  
+CLI_COMMAND(dummy)
 {
     ioStream.printf("I'm used do check the dropCnt.\n");
     return 0;
