@@ -11,6 +11,10 @@ A demonstration and test bench for the `libcli` library, showcasing its capabili
 - **VT100 Terminal Support**: Implements selected VT100 sequences for enhanced terminal usability.
 - **Unit Testing**: Includes a set of unit tests to validate the functionality of `libcli`.
 
+## Changelog
+
+See the [CHANGELOG](CHANGELOG.md) for a detailed list of changes and updates.
+
 ## Installation
 
 ### Prerequisites

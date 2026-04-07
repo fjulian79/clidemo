@@ -349,4 +349,158 @@ UNITTEST_DECL(history) {
           history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "over") == 0);
      TEST_ASSERT("fwd at newest -> false",
           history.seek_forward() == false);
+
+     ioStream.printf("[17] Duplicate prevention — identical consecutive entries\n");
+     /* When appending a string identical to the last entry (pLast), append()
+      * should return true but not write anything. */
+     history.clear();
+     history.append("test", 4);
+     size_t free_before = history.get_free_space();
+     TEST_ASSERT("append identical \"test\" -> true (no write)",
+          history.append("test", 4) == true);
+     TEST_ASSERT("free space unchanged (duplicate not written)",
+          history.get_free_space() == free_before);
+     TEST_ASSERT("read still returns \"test\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "test") == 0);
+     TEST_ASSERT("no older entry exists",
+          history.seek_backward() == false);
+     
+     /* Different entry should be appended normally */
+     TEST_ASSERT("append different \"other\" -> true",
+          history.append("other", 5) == true);
+     TEST_ASSERT("free space decreased",
+          history.get_free_space() < free_before);
+     TEST_ASSERT("read -> \"other\"",
+          history.read(buf, sizeof(buf)) == 5 && strcmp(buf, "other") == 0);
+     TEST_ASSERT("bwd -> previous entry \"test\" exists",
+          history.seek_backward() == true);
+     TEST_ASSERT("read -> \"test\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "test") == 0);
+
+     ioStream.printf("[18] Duplicate after navigation — pRead reset\n");
+     /* User navigates in history (pRead != pLast), then enters the same
+      * command as the newest entry. The duplicate should not be written,
+      * but pRead must be reset to pLast. */
+     history.clear();
+     history.append("first", 5);
+     history.append("second", 6);
+     history.append("third", 5);
+     
+     /* Navigate backward */
+     history.seek_backward(); /* now at "second" */
+     history.seek_backward(); /* now at "first"  */
+     TEST_ASSERT("read after navigation -> \"first\"",
+          history.read(buf, sizeof(buf)) == 5 && strcmp(buf, "first") == 0);
+     
+     /* Append same as newest entry (pLast="third") */
+     free_before = history.get_free_space();
+     TEST_ASSERT("append \"third\" (identical to pLast) -> true",
+          history.append("third", 5) == true);
+     TEST_ASSERT("free space unchanged (duplicate not written)",
+          history.get_free_space() == free_before);
+     TEST_ASSERT("pRead reset: read -> \"third\" (newest)",
+          history.read(buf, sizeof(buf)) == 5 && strcmp(buf, "third") == 0);
+     TEST_ASSERT("at newest entry: seek_forward -> false",
+          history.seek_forward() == false);
+
+     ioStream.printf("[19] is_used flag reset after append\n");
+     /* After any append() — whether writing a new entry or detecting a
+      * duplicate — is_used should be set to false and pRead should point
+      * to the newest entry. */
+     history.clear();
+     history.append("alpha", 5);
+     history.append("beta", 4);
+     
+     history.is_used = true;
+     history.seek_backward(); /* navigate to "alpha" */
+     TEST_ASSERT("is_used was true before append", 
+          history.is_used == true);
+     
+     history.append("gamma", 5);
+     TEST_ASSERT("is_used reset to false after append",
+          history.is_used == false);
+     TEST_ASSERT("pRead at newest: read -> \"gamma\"",
+          history.read(buf, sizeof(buf)) == 5 && strcmp(buf, "gamma") == 0);
+     
+     /* Same test with duplicate detection path */
+     history.is_used = true;
+     history.seek_backward(); /* navigate away */
+     history.append("gamma", 5); /* identical to pLast */
+     TEST_ASSERT("is_used reset to false even on duplicate",
+          history.is_used == false);
+     TEST_ASSERT("pRead at newest: read -> \"gamma\"",
+          history.read(buf, sizeof(buf)) == 5 && strcmp(buf, "gamma") == 0);
+
+     ioStream.printf("[20] Duplicate detection with wrapped entry\n");
+     /* Verify duplicate detection works when the pLast entry is wrapped
+      * across the buffer boundary. */
+     history.clear();
+     memset(big, 'X', 97); big[97] = '\0';
+     history.append(big, 97);    /* [0..97], pHead=98  */
+     memset(big, 'Y', 97);
+     history.append(big, 97);    /* [98..195], pHead=196, pTail=0 */
+     history.append("wrap", 4);   /* evicts X; [196..199,0]="wrap\0", pHead=1 */
+     
+     free_before = history.get_free_space();
+     TEST_ASSERT("append wrapped \"wrap\" duplicate -> true",
+          history.append("wrap", 4) == true);
+     TEST_ASSERT("free space unchanged (wrapped duplicate detected)",
+          history.get_free_space() == free_before);
+     TEST_ASSERT("read -> \"wrap\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "wrap") == 0);
+
+     ioStream.printf("[21] Duplicate detection — case sensitivity\n");
+     /* Strings differing only in case should NOT be treated as duplicates */
+     history.clear();
+     history.append("Test", 4);
+     free_before = history.get_free_space();
+     TEST_ASSERT("append \"test\" (different case) -> true (new entry)",
+          history.append("test", 4) == true);
+     TEST_ASSERT("free space decreased (not a duplicate)",
+          history.get_free_space() < free_before);
+     TEST_ASSERT("read newest -> \"test\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "test") == 0);
+     TEST_ASSERT("bwd -> \"Test\" (previous entry)",
+          history.seek_backward() == true);
+     TEST_ASSERT("read -> \"Test\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "Test") == 0);
+
+     ioStream.printf("[22] Duplicate detection — empty history\n");
+     /* Calling append() on an empty history (pLast==0) should always write */
+     history.clear();
+     TEST_ASSERT("append \"first\" on empty history -> true",
+          history.append("first", 5) == true);
+     TEST_ASSERT("entry was written",
+          history.get_free_space() == CLI_HISTORYSIZ - 6);
+     TEST_ASSERT("read -> \"first\"",
+          history.read(buf, sizeof(buf)) == 5 && strcmp(buf, "first") == 0);
+
+     ioStream.printf("[23] Multiple different entries then duplicate\n");
+     /* Build up several entries, then try to duplicate the most recent */
+     history.clear();
+     history.append("cmd1", 4);
+     history.append("cmd2", 4);
+     history.append("cmd3", 4);
+     history.append("cmd4", 4);
+     
+     free_before = history.get_free_space();
+     TEST_ASSERT("append duplicate \"cmd4\" -> true",
+          history.append("cmd4", 4) == true);
+     TEST_ASSERT("free space unchanged",
+          history.get_free_space() == free_before);
+     
+     /* Verify full history is intact */
+     TEST_ASSERT("read newest -> \"cmd4\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "cmd4") == 0);
+     history.seek_backward();
+     TEST_ASSERT("read -> \"cmd3\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "cmd3") == 0);
+     history.seek_backward();
+     TEST_ASSERT("read -> \"cmd2\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "cmd2") == 0);
+     history.seek_backward();
+     TEST_ASSERT("read -> \"cmd1\"",
+          history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "cmd1") == 0);
+     TEST_ASSERT("no older entry",
+          history.seek_backward() == false);
 }
