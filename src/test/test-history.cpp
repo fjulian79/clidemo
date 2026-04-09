@@ -29,6 +29,10 @@
  * @brief Tests the CliHistory ring-buffer implementation.
  */
 UNITTEST_DECL(history) {
+#if CLI_HISTORYSIZ == 0
+     ioStream.printf("\n[SKIPPED] History unit tests - CLI_HISTORYSIZ is 0 (history disabled)\n");
+     return;
+#else
      CliHistory history;
 
      char buf[CLI_COMMANDSIZ];
@@ -503,4 +507,5 @@ UNITTEST_DECL(history) {
           history.read(buf, sizeof(buf)) == 4 && strcmp(buf, "cmd1") == 0);
      TEST_ASSERT("no older entry",
           history.seek_backward() == false);
+#endif
 }
