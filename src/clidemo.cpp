@@ -55,6 +55,17 @@
 #endif
 
 /**
+ * @brief Used to define dummy commands for testing the command listing and
+ * command completion functionality.
+ * @arg   _name  The name of the dummy command, e.g. "foo"
+ */
+#define DUMMY_CMD(_name)                                            \
+    CLI_COMMAND(_name) {                                            \
+        ioStream.printf("Executed dummy command %s\n", #_name);     \
+        return 0;                                                   \
+    }
+
+/**
  * @brief Defines the operational mode of the led.
  */
 typedef enum{
@@ -89,9 +100,10 @@ Task serialTask(10);
 CLI_COMMAND(ver) {
     ioStream.printf("\n%s %s, Copyright (C) 2025 Julian Friedrich\n",
             VERSION_PROJECT, VERSION_GIT_SHORT);
-    ioStream.printf("Build:    %s, %s\n", __DATE__, __TIME__);
-    ioStream.printf("Git Repo: %s\n", VERSION_GIT_REMOTE_ORIGIN);
-    ioStream.printf("Revision: %s\n", VERSION_GIT_LONG);
+    ioStream.printf("Build:           %s, %s\n", __DATE__, __TIME__);
+    ioStream.printf("Git Repo:        %s\n", VERSION_GIT_REMOTE_ORIGIN);
+    ioStream.printf("Revision:        %s\n", VERSION_GIT_LONG);
+    ioStream.printf("libCli Version:  %s\n", CLI_VERSION);
     ioStream.printf("\n");
     ioStream.printf("This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you\n");
     ioStream.printf("are welcome to redistribute it under certain conditions.\n");
@@ -123,30 +135,82 @@ CLI_COMMAND(led) {
 }
 
 /**
+ * @brief Turns the LED on.
+ * Does the same as "led 1", but is used to test command completion and command 
+ * listing.
+ */
+CLI_COMMAND(led_on){
+    ledMode = LED_STATIC;
+    digitalWrite(LED_BUILTIN, 1);
+    return 0;
+}
+
+/**
+ * @brief Turns the LED off.
+ * Does the same as "led 0", but is used to test command completion and command
+ * listing.
+ */
+CLI_COMMAND(led_off){
+    ledMode = LED_STATIC;
+    digitalWrite(LED_BUILTIN, 0);
+    return 0;
+}
+
+/**
+ * @brief Makes the LED blink.
+ * Does the same as "led b", but is used to test command completion and command
+ * listing.
+ */
+CLI_COMMAND(led_blink){
+    ledMode = LED_BLINK;
+    return 0;
+}
+
+/**
+ * @brief Used to list all registered commands.
+ * This command is used to test the command listing functionality and to check 
+ * if all commands are properly registered. Can also be used to check completion
+ * as it shares the leading l with the led command and its friends.
+ */
+CLI_COMMAND(list) {
+    cliCmd_t *pCmdTab = CliCommand::getTable();
+    size_t cmdCnt = CliCommand::getCmdCnt();
+
+    ioStream.printf("Registered Command's:\n");
+
+    for(size_t i = 0; i < cmdCnt; i++){
+        ioStream.printf("  %s\n", pCmdTab[i].name);
+    }
+    ioStream.print("\n");
+
+    return 0;
+}
+
+/**
  * @brief Prints infos on lib cli
  */
 CLI_COMMAND(info) {
-    cliCmd_t *pCmdTab = CliCommand::getTable();
-    size_t cmdCnt = CliCommand::getCmdCnt();
-    size_t dropCnt = CliCommand::getDropCnt();
+    #if HAS_WIFI_SUPPORT
+    telnetServer.info(ioStream);
+    #endif
 
     ioStream.printf("\nLib Cli Infos:\n");
-    ioStream.printf("  Version:               %s\n", CLI_VERSION);
-    ioStream.printf("  CLI_COMMANDSIZ:        %d\n", CLI_COMMANDSIZ);
-    ioStream.printf("  CLI_HISTORYSIZ:        %d\n", CLI_HISTORYSIZ);
-    ioStream.printf("  CLI_ARGVSIZ:           %d\n", CLI_ARGVSIZ);
-    ioStream.printf("  CLI_PROMPT:            %s\n", CLI_PROMPT);
-    ioStream.printf("  CLI_BUFFEREDIO:        %d\n", CLI_BUFFEREDIO);
-    ioStream.printf("  SERIAL_RX_BUFFER_SIZE: %d\n", SERIAL_RX_BUFFER_SIZE);
-    ioStream.printf("  Supported commands:    %d\n", CLI_COMMANDS_MAX);
-    ioStream.printf("  Registered commands:   %d\n", cmdCnt);
-    ioStream.printf("  Dropped commands:      %d\n", dropCnt);
-    ioStream.printf("  Registered Command's:\n");
+    ioStream.printf("  libcli Version:              %s\n", CLI_VERSION);
+    ioStream.printf("  CLI_COMMANDSIZ:              %d\n", CLI_COMMANDSIZ);
+    ioStream.printf("  CLI_HISTORYSIZ:              %d\n", CLI_HISTORYSIZ);
+    ioStream.printf("  CLI_ARGVSIZ:                 %d\n", CLI_ARGVSIZ);
+    ioStream.printf("  CLI_PROMPT:                  %s\n", CLI_PROMPT);
+    ioStream.printf("  CLI_BUFFEREDIO:              %d\n", CLI_BUFFEREDIO);
+    ioStream.printf("  CLI_TAB_COMPLETION:          %d\n", CLI_TAB_COMPLETION);
+    ioStream.printf("  CLI_TERMINAL_WIDTH:          %d\n", CLI_TERMINAL_WIDTH);
+    ioStream.printf("  CLI_CMDTAB_SORTING_DEFAULT:  %d\n", CLI_CMDTAB_SORTING_DEFAULT);
+    ioStream.printf("  SERIAL_RX_BUFFER_SIZE:       %d\n", SERIAL_RX_BUFFER_SIZE);
+    ioStream.printf("  Supported commands:          %d\n", CLI_COMMANDS_MAX);
+    ioStream.printf("  Registered commands:         %d\n", CliCommand::getCmdCnt());
+    ioStream.printf("  Dropped commands:            %d\n", CliCommand::getDropCnt());
+    ioStream.printf("\n");
 
-    for(size_t i = 0; i < cmdCnt; i++){
-        ioStream.printf("    %s\n", pCmdTab[i].name);
-    }
-    ioStream.print("\n");
+    CliCommand::exec(ioStream, "list", nullptr, 0);
 
     return 0;
 }
@@ -262,45 +326,60 @@ CLI_COMMAND(telnet) {
  * @brief Print's the help text.
  */
 CLI_COMMAND(help) {
-    ioStream.printf("Supported commands:\n");
-    ioStream.printf("  ver             Used to print version infos.\n");
-    ioStream.printf("  led 0|1|b       Used to control the led. \n");
-    ioStream.printf("                    0   turns the led off.\n");
-    ioStream.printf("                    1   turns the led on.\n");
-    ioStream.printf("                    b   let it blink.\n");
-    ioStream.printf("  telnet cmd      Used to control the telnet server.\n");
-    ioStream.printf("                    begin ssid passwd\n");
-    ioStream.printf("                    info\n");
-    ioStream.printf("  info            Used to print lib cli infos.\n");
-    ioStream.printf("  unittest <test> Used to run unit tests.\n");
-    ioStream.printf("                    Use argument 'all' to run all tests.\n");
-    ioStream.printf("  err ret         Used to test errors in a command.\n");
-    ioStream.printf("                    ret   return value of the command.\n");
-    ioStream.printf("  list [args]     Used to test how arguments are parsed.\n");
-    ioStream.printf("  bell            Used to ring the bell of the host terminal.\n");
-    ioStream.printf("  echo on|off     Used to turn echo on or off.\n");
-    ioStream.printf("  reset           Used to reset the CPU.\n");
-    ioStream.printf("  help            Prints this text.\n");
+    ioStream.printf("Available commands:\n");
+    ioStream.printf("  help                         Show this help\n");
+    ioStream.printf("  ver                          Show version information\n");
+    ioStream.printf("  info                         Show libCli configuration\n");
+    ioStream.printf("  list                         List all registered commands\n");
+    ioStream.printf("\nLED Control:\n");
+    ioStream.printf("  led <0|1|b>                  Control LED (0=off, 1=on, b=blink)\n");
+    ioStream.printf("\nNetwork:\n");
+    ioStream.printf("  telnet begin <ssid> <pass>   Start telnet server on supported platforms\n");
+    ioStream.printf("  telnet info                  Show telnet status on supported platforms\n");
+    ioStream.printf("\nSystem:\n");
+    ioStream.printf("  echo <on|off>                Toggle command echo\n");
+    ioStream.printf("  reset                        Reset CPU\n");
+    ioStream.printf("\nTesting/Debug:\n");
+    ioStream.printf("  test <name|all>              Run unit tests\n");
+    ioStream.printf("  args [...]                   Show argument parsing\n");
+    ioStream.printf("  err <n>                      Test error return codes\n");
+    ioStream.printf("  bell                         Ring terminal bell\n");
     ioStream.printf("\n");
 
     return 0;
 }
 
 /**
- * To test if disabled preprocessor blocks are handled correctly.
+ * @brief Dummy commands to check the command listing and command completion 
+ * functionality.
  */
-#if 1
+DUMMY_CMD(dummy);
+DUMMY_CMD(dummy_2);
+DUMMY_CMD(dummy_4);
+DUMMY_CMD(dummy_3);
+DUMMY_CMD(dummy_1);
+DUMMY_CMD(dummy_long_3);
+DUMMY_CMD(dummy_long_1);
+DUMMY_CMD(dummy_long_2);
+DUMMY_CMD(dummy_long_4);
 
 /**
- * @brief Dummy command to check the dropCnt.
- *
- * The number of supporded commands is set to 9 in platformio.ini. So this one
- * here shold be dropped. Can be checked with the info command.
+ * To test if disabled preprocessor blocks are handled correctly.
  */
-CLI_COMMAND(dummy) {
-    ioStream.printf("I'm used do check the dropCnt.\n");
-    return 0;
-}
+#if 0
+
+/**
+ * @brief Dummy commands to check the dropCnt.
+ *
+ * The number of supporded commands is set in platformio.ini. 
+ * if the number of registered commands exceeds the supported number of 
+ * commands, the commands will be dropped and the drop count will be increased. 
+ * This is used to check if the drop count is working correctly and if the 
+ * library can handle more registered commands than supported.
+ */
+DUMMY_CMD(dummy_extra_1);
+DUMMY_CMD(dummy_extra_2);
+DUMMY_CMD(dummy_extra_3);
 
 #endif
 

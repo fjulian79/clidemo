@@ -1,7 +1,7 @@
 /*
  * clidemo, a example and test bench for my command line library libcli.
  *
- * Copyright (C) 2025 Julian Friedrich
+ * Copyright (C) 2026 Julian Friedrich
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,25 +36,18 @@ unittest_t unittestTab[] = {
 };
 
 /**
- * Declaration of used commands.
- */
-CLI_COMMAND_DEF(ver);
-CLI_COMMAND_DEF(info);
-
-/**
  * The main CLI command for running unit tests.
  * You will not need to touch this, add new tests to the table above and
  * implement them in separate files like src/test/test-history.cpp
  */
-CLI_COMMAND(unittest){
-    
+CLI_COMMAND(test){
     TestRun testRun;
 
-    cmd_info(ioStream, nullptr, 0);
+    CliCommand::exec(ioStream, "info", nullptr, 0);
+
     ioStream.printf("Running unit tests ...\n\n");
-    
     if (argc != 1) {
-        ioStream.printf("Usage: unittest [testname]\n");
+        ioStream.printf("Usage: test [testname]\n");
         ioStream.printf("Available tests:\n");
         for (size_t i = 0; unittestTab[i].name != nullptr; i++) {
             ioStream.printf("  %s\n", unittestTab[i].name);
@@ -78,7 +71,7 @@ CLI_COMMAND(unittest){
             }
         }
         if (!found) {
-            ioStream.printf("Test '%s' not found. Use 'unittest all' to run all tests.\n", argv[0]);
+            ioStream.printf("Test '%s' not found. Use 'test all' to run all tests.\n", argv[0]);
             return -1;
         }
     }
