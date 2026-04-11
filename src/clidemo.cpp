@@ -384,40 +384,57 @@ DUMMY_CMD(dummy_extra_3);
 #endif
 
 /**
- * This task makes only sense on a MCU's with build in USB CDC Serial which
- * is aware of active connections. On all other boards it will work as well,
- * but transition to state 2 and stay there for ever.
+ * @brief Platform-dependent serial initialization handler
+ * 
+ * Handles two different serial port types:
+ * - USB CDC (RP2040, ESP32-S2/C3/C6 with USB): Serial only available when USB 
+ *   is connected. Uses if(Serial) check to detect connection.
+ * - Hardware UART (ESP32 classic, ESP8266, STM32): Serial always available, 
+ *   no connection detection needed.
  */
-void serialTaskFunction(uint32_t now) {
+void handleSerial(uint32_t now) {
     static uint8_t state = 0;
 
+#if defined(ARDUINO_ARCH_RP2040) ||                                     \
+    (defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT == 1)
+    /* USB CDC boards - wait for USB connection */
     if (Serial && state == 0) {
         Serial.begin(115200);
         state = 1;
         return;
     }
 
+    if (!Serial && state != 0) {
+        /* USB disconnected, reset to wait for reconnection */
+        state = 0;  
+    }
+#else
+    /* Hardware UART boards - Serial always available */
+    if (state == 0) {
+        Serial.begin(115200);
+        state = 1;
+        return;
+    }
+#endif
+
     if (state == 1) {
         Serial.println();
         cmd_ver(Serial, 0, 0);
-        Serial.printf("Use the 'help' command to get a list of available commands.\n\n");
+        Serial.printf(
+            "Use the 'help' command to get a list of available commands.\n\n");
         cli.begin();
         state = 2;
     }
 
-    if (!Serial && state != 0) {
-        state = 0;
-    }
-
-    if(state == 2) {
+    if (state == 2) {
         cli.loop();
     }
 }
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
-
-    serialTask.setTaskFunction(serialTaskFunction);
+    
+    serialTask.setTaskFunction(handleSerial);
 }
 
 void loop() {
