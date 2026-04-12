@@ -7,7 +7,7 @@ A demonstration and test bench for the `libcli` library, showcasing its capabili
 - **Command-Line Interface**: Demonstrates how to implement a responsive CLI using `libcli`.
 - **Command Registration**: Showcases automatic command registration via the `CLI_COMMAND(name)` macro.
 - **Stream-Based Transport**: Utilizes serial communication to interact with the CLI.
-- **Optional Telnet Support**: On ESP32, a telenet server can be started.
+- **Optional Telnet Support**: On ESP32, a telnet server can be started.
 - **VT100 Terminal Support**: Implements selected VT100 sequences for enhanced terminal usability.
 - **Unit Testing**: Includes a set of unit tests to validate the functionality of `libcli`.
 

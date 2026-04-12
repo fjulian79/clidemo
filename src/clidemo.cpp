@@ -105,8 +105,8 @@ CLI_COMMAND(ver) {
     ioStream.printf("Revision:        %s\n", VERSION_GIT_LONG);
     ioStream.printf("libCli Version:  %s\n", CLI_VERSION);
     ioStream.printf("\n");
-    ioStream.printf("This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you\n");
-    ioStream.printf("are welcome to redistribute it under certain conditions.\n");
+    ioStream.printf("This program comes with ABSOLUTELY NO WARRANTY. This is free software, \n");
+    ioStream.printf("and you are welcome to redistribute it under certain conditions.\n");
     ioStream.printf("See GPL v3 licence at https://www.gnu.org/licenses/ for details.\n\n");
 
     return 0;
