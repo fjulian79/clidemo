@@ -206,8 +206,8 @@ CLI_COMMAND(info) {
     ioStream.printf("  CLI_CMDTAB_SORTING_DEFAULT:  %d\n", CLI_CMDTAB_SORTING_DEFAULT);
     ioStream.printf("  SERIAL_RX_BUFFER_SIZE:       %d\n", SERIAL_RX_BUFFER_SIZE);
     ioStream.printf("  Supported commands:          %d\n", CLI_COMMANDS_MAX);
-    ioStream.printf("  Registered commands:         %d\n", CliCommand::getCmdCnt());
-    ioStream.printf("  Dropped commands:            %d\n", CliCommand::getDropCnt());
+    ioStream.printf("  Registered commands:         %zu\n", CliCommand::getCmdCnt());
+    ioStream.printf("  Dropped commands:            %zu\n", CliCommand::getDropCnt());
     ioStream.printf("\n");
 
     CliCommand::exec(ioStream, "list", nullptr, 0);
@@ -237,7 +237,7 @@ CLI_COMMAND(err) {
 CLI_COMMAND(args) {
     ioStream.printf("Recognized arguments:\n");
     for(size_t i = 0; i < argc; i++) {
-        ioStream.printf("  argv[%d]: \"%s\"\n", i, argv[i]);
+        ioStream.printf("  argv[%zu]: \"%s\"\n", i, argv[i]);
     }
 
     return 0;
