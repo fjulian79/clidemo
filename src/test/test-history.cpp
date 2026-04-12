@@ -29,8 +29,8 @@
  * @brief Tests the CliHistory ring-buffer implementation.
  */
 UNITTEST_DECL(history) {
-#if CLI_HISTORYSIZ == 0
-     ioStream.printf("\n[SKIPPED] History unit tests - CLI_HISTORYSIZ is 0 (history disabled)\n");
+#if defined(RESOURCE_USAGE_TEST) || CLI_HISTORYSIZ == 0
+     ioStream.printf("\n[SKIPPED] History unit tests disabled\n");
      return;
 #else
      CliHistory history;
