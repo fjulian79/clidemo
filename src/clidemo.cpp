@@ -393,47 +393,56 @@ DUMMY_CMD(dummy_extra_3);
  *   no connection detection needed.
  */
 void handleSerial(uint32_t now) {
-    static uint8_t state = 0;
+    static enum {
+        idle = 0,
+        connected,
+        initialized
+    } serial_state = idle;
 
 #if defined(ARDUINO_ARCH_RP2040) ||                                     \
     (defined(ARDUINO_USB_CDC_ON_BOOT) && ARDUINO_USB_CDC_ON_BOOT == 1)
     /* USB CDC boards - wait for USB connection */
-    if (Serial && state == 0) {
+    if (Serial && serial_state == idle) {
         Serial.begin(115200);
-        state = 1;
+        serial_state = connected;
         return;
     }
 
-    if (!Serial && state != 0) {
+    if (!Serial && serial_state != idle) {
         /* USB disconnected, reset to wait for reconnection */
-        state = 0;  
+        serial_state = idle;  
     }
 #else
     /* Hardware UART boards - Serial always available */
-    if (state == 0) {
+    if (serial_state == idle) {
         Serial.begin(115200);
-        state = 1;
+        /* Unclear if this while is necessary for hardware UART boards, has been
+         * used in some examples to wait for the serial port to be ready.
+         * As far as I can tell, it does not cause any issues on ESP32 classic, 
+         * ESP8266, or STM32, so we can keep it for safety.
+         */
+        while (!Serial); 
+        serial_state = connected;
         return;
     }
 #endif
 
-    if (state == 1) {
+    if (serial_state == connected) {
         Serial.println();
         cmd_ver(Serial, 0, 0);
         Serial.printf(
             "Use the 'help' command to get a list of available commands.\n\n");
         cli.begin();
-        state = 2;
+        serial_state = initialized;
     }
 
-    if (state == 2) {
+    if (serial_state == initialized) {
         cli.loop();
     }
 }
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
-    
     serialTask.setTaskFunction(handleSerial);
 }
 
